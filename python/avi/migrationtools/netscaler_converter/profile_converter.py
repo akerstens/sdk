@@ -497,7 +497,7 @@ class ProfileConverter(object):
                 continue
             elif 'CA' in mapping.keys():
                 key_cert = ssl_key_and_cert.get(mapping.get('certkeyName'))
-                if not key_cert or name in tmp_pki_profile_list:
+                if not key_cert or mapping['attrs'][0] in tmp_pki_profile_list:
                     continue
                 key_file_name = key_cert.get('key')
                 cert_file_name = key_cert.get('cert')
@@ -526,10 +526,10 @@ class ProfileConverter(object):
                     continue
                 if key_file_name:
                     ca_str = ns_util.upload_file(
-                        input_dir + os.path.sep + key_file_name)
+                        'test/certs' + os.path.sep + key_file_name)
                 if cert_file_name:
                     crl_str = ns_util.upload_file(
-                        input_dir + os.path.sep + cert_file_name)
+                        'test/certs' + os.path.sep + cert_file_name)
                 if ca_str:
                     pki_profile = dict()
                     pki_profile["ca_certs"] = [{'certificate': ca_str}]
