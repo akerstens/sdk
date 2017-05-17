@@ -22,7 +22,7 @@ class PolicyConverter(object):
     This class is used to convert the policy
     """
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 bind_skipped, na_attrs, ignore_vals, user_ignore):
+                 bind_skipped, na_attrs, ignore_vals, user_ignore, prefix):
         """
         Construct a new 'PolicyConverter' object.
         :param tenant_name: Name of tenant
@@ -48,6 +48,9 @@ class PolicyConverter(object):
         self.ignore_vals = ignore_vals
         # List of ignore val attributes for policy netscaler command.
         self.user_ignore = user_ignore
+        # Added prefix for objects
+        self.prefix = prefix
+
 
     def convert(self, bind_conf_list, ns_config, avi_config, tmp_pool_ref,
                 redirect_pools, netscalar_command, case_sensitive):
@@ -226,6 +229,8 @@ class PolicyConverter(object):
             policy_obj['http_request_policy'] = http_security_policy
             is_policy_obj = True
         if is_policy_obj:
+            if self.prefix:
+                vs_policy_name = self.prefix + '-' + vs_policy_name
             policy_obj['name'] = vs_policy_name
             return policy_obj
 
@@ -752,7 +757,8 @@ class PolicyConverter(object):
         :param avi_config: dict of AVI
         :return: StringGroup object
         """
-
+        if self.prefix:
+            string_group_name = self.prefix + '-' + string_group_name
         if not matches:
             return None
         stringgroup_object = {
@@ -817,6 +823,8 @@ class PolicyConverter(object):
         else:
             pool_group_ref = targetLBVserver + '-poolgroup'
             pool_group_ref = re.sub('[:]', '-', pool_group_ref)
+            if self.prefix:
+                pool_group_ref = self.prefix + '-' + pool_group_ref
             pool_group = [pg for pg in avi_config['PoolGroup']
                           if pg['name'] == pool_group_ref]
             index = int(random.random() * 10000)

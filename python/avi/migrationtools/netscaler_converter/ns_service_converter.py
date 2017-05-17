@@ -20,7 +20,7 @@ class ServiceConverter(object):
 
 
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 profile_merge_check, user_ignore):
+                 profile_merge_check, user_ignore, prefix):
         """
         Construct a new 'ServiceConverter' object.
         :param tenant_name: Name of tenant
@@ -64,6 +64,8 @@ class ServiceConverter(object):
         # List of ignore val attributes for add servicegroup netscaler command.
         self.nsservice_server_user_ignore = \
             user_ignore.get('nsservice_server', [])
+        # Added prefix for objects
+        self.prefix = prefix
 
     def convert(self, ns_config, avi_config):
         """
@@ -148,6 +150,8 @@ class ServiceConverter(object):
                             ns_bind_lb_vserver_command, element)
                     service = element['attrs'][1]
                     pool_name = re.sub('[:]', '-', service + '-pool')
+                    if self.prefix:
+                        pool_name = self.prefix + '-' + pool_name
                     pool = [pool for pool in avi_config['Pool']
                             if pool['name'] == pool_name]
                     if pool:
@@ -185,6 +189,8 @@ class ServiceConverter(object):
 
                 pg_name = group_key + '-poolgroup'
                 pg_name = re.sub('[:]', '-', pg_name)
+                if self.prefix:
+                    pg_name = self.prefix + '-' + pg_name
                 if pg_members:
                     pool_group = {
                         'name': pg_name,
@@ -209,6 +215,9 @@ class ServiceConverter(object):
             ns_set_lb_group_complate_command = \
                 ns_util.get_netscalar_full_command(ns_set_lb_group_command,
                                                    set_lb_group)
+            # Added prefix before object
+            if self.prefix:
+                profile_name = self.prefix + '-' + profile_name
             if persistenceType in self.lbvs_supported_persist_types:
                 application_persistence_profile = \
                     ns_util.convert_persistance_prof(set_lb_group, profile_name,
@@ -249,6 +258,8 @@ class ServiceConverter(object):
                     ns_util.get_netscalar_full_command(ns_bind_lb_group_command,
                                                        bind_lb_group)
                 pool_group_name = bind_lb_group['attrs'][1] + '-poolgroup'
+                if self.prefix:
+                    pool_group_name = self.prefix + '-' + pool_group_name
                 pool_group = [pool_group for pool_group in
                               avi_config['PoolGroup'] if pool_group['name'] ==
                               pool_group_name]
@@ -317,7 +328,8 @@ class ServiceConverter(object):
                                        STATUS_INCOMPLETE_CONFIGURATION)
                 continue
             pool_name = re.sub('[:]', '-', service_name + '-pool')
-
+            if self.prefix:
+                pool_name = self.prefix + '-' + pool_name
             pool_obj = {
                 'name': pool_name,
                 'servers': [server],
@@ -418,6 +430,8 @@ class ServiceConverter(object):
                 continue
 
             pool_name = re.sub('[:]', '-', service_group_name + '-pool')
+            if self.prefix:
+                pool_name = self.prefix + '-' + pool_name
             pool_obj = {
                 'name': pool_name,
                 'servers': servers,
@@ -536,6 +550,8 @@ class ServiceConverter(object):
                                                STATUS_EXTERNAL_MONITOR,
                                                skipped_status)
                         continue
+                    if self.prefix:
+                        monitor_name = self.prefix + '-' + monitor_name
                     monitor_refs.append(monitor_name)
                     LOG.info('Conversion successful : %s' %
                              full_bind_service_command)
@@ -644,6 +660,8 @@ class ServiceConverter(object):
                     ns_bind_service_group_command, server_binding)
             if server_binding.get('monitorName', None):
                 monitor_name = server_binding.get('monitorName')
+                if self.prefix:
+                    monitor_name = self.prefix + '-' + monitor_name
                 monitor = [monitor for monitor in avi_config['HealthMonitor']
                            if monitor['name'] == monitor_name]
                 if monitor:

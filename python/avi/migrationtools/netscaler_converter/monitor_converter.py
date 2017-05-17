@@ -15,7 +15,7 @@ class MonitorConverter(object):
 
 
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 user_ignore):
+                 user_ignore, prefix):
         """
         Construct a new 'MonitorConverter' object.
         :param tenant_name: Name of tenant
@@ -39,6 +39,8 @@ class MonitorConverter(object):
         self.cloud_ref = cloud_ref
         # List of ignore val attributes for add lb monitor netscaler command.
         self.user_ignore = user_ignore.get('monitor', [])
+        # Added prefix flag
+        self.prefix = prefix
 
     def convert(self, ns_config, avi_config, input_dir):
         """
@@ -101,7 +103,9 @@ class MonitorConverter(object):
 
         avi_monitor = dict()
         try:
-
+            if self.prefix:
+                ns_monitor['attrs'][0] = self.prefix + '-' + \
+                                         ns_monitor['attrs'][0]
             LOG.debug('Conversion started for monitor %s' %
                       ns_monitor['attrs'][0])
             avi_monitor["name"] = (ns_monitor['attrs'][0]).strip().\

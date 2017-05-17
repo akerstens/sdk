@@ -26,7 +26,7 @@ merge_profile_mapping = {
 
 class ProfileConverter(object):
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 ssl_ciphers, profile_merge_check, user_ignore,
+                 ssl_ciphers, profile_merge_check, user_ignore, prefix,
                  keypassphrase=None):
         """
         Construct a new 'ProfileConverter' object.
@@ -131,9 +131,10 @@ class ProfileConverter(object):
         # List of ignore val attributes for bind ssl service netscaler command.
         self.profile_bind_ssl_service_user_ignore = user_ignore.get(
             'profile_bind_ssl_service', [])
-
         if keypassphrase:
             self.netscalar_passphrase_keys = yaml.safe_load(open(keypassphrase))
+        # Added prefix for objects
+        self.prefix = prefix
 
     def convert(self, ns_config, avi_config, input_dir):
         """
@@ -294,6 +295,8 @@ class ProfileConverter(object):
                                                    ssl_service)
             ssl_profile_name = ssl_service['attrs'][0]
             ssl_profile_name = re.sub('[:]', '-', ssl_profile_name)
+            if self.prefix:
+                ssl_profile_name = self.prefix + '-' + ssl_profile_name
             ssl_profile = {
                 'name': ssl_profile_name,
                 'tenant_ref': self.tenant_ref,
@@ -374,6 +377,8 @@ class ProfileConverter(object):
 
         app_profile = dict()
         try:
+            if self.prefix:
+                profile['attrs'][0] = self.prefix + '-' + profile['attrs'][0]
             LOG.debug("Converting httpProfile: %s" % profile['attrs'][0])
             app_profile['name'] = profile['attrs'][0]
             app_profile['tenant_ref'] = self.tenant_ref
@@ -406,6 +411,8 @@ class ProfileConverter(object):
 
         ntwk_profile = None
         try:
+            if self.prefix:
+                profile['attrs'][0] = self.prefix + '-' + profile['attrs'][0]
             nagle = profile.get("nagle", 'DISABLED')
             nagle = False if nagle == 'DISABLED' else True
             mss = profile.get("mss", 0)
@@ -486,6 +493,9 @@ class ProfileConverter(object):
                                                                    mapping)
             bind_ssl_success = False
             skipped_status = None
+            # Added prefix for objects
+            if self.prefix:
+                mapping['attrs'][0] = self.prefix + '-' + mapping['attrs'][0]
 
             if 'policyName' in mapping.keys():
                 skipped_status = 'Not supported: %s' % bind_ssl_full_cmd
@@ -599,6 +609,8 @@ class ProfileConverter(object):
                     name = key_cert['attrs'][0] + '-dummy'
                 else:
                     name = key_cert['attrs'][0]
+                if self.prefix:
+                    name = self.prefix + '-' + name
                     # Get the key passphrase for key_file
                     if self.netscalar_passphrase_keys:
                         key_passphrase = self.netscalar_passphrase_keys.get \
