@@ -44,6 +44,8 @@ class NetscalerConverter(AviConverter):
         # vs_filter.py args taken into classs variable
         self.vs_filter = args.vs_filter
         self.ignore_config = args.ignore_config
+        # Added prefix for objects
+        self.prefix = args.prefix
 
     def init_logger_path(self):
         LOG.setLevel(logging.DEBUG)
@@ -94,16 +96,18 @@ class NetscalerConverter(AviConverter):
         avi_config = ns_conf_converter.convert(
             ns_config, self.tenant, self.cloud_name, self.controller_version,
             output_dir, input_dir, skipped_cmds, self.vs_state,
-            self.profile_merge_check, self.ns_passphrase_file, user_ignore)
+            self.profile_merge_check, self.prefix, self.ns_passphrase_file,
+            user_ignore)
 
         avi_config = self.process_for_utils(
             avi_config)
-        self.write_output(avi_config, output_dir)
+        self.write_output(avi_config, output_dir, self.prefix)
 
         if self.option == 'auto-upload':
             self.upload_config_to_controller(
                 avi_config)
 
+        return avi_config
 
 
 if __name__ == "__main__":
@@ -192,6 +196,8 @@ if __name__ == "__main__":
                                             'virtualservices')
     parser.add_argument('--ignore_config',
                         help='config json to skip the config in conversion')
+    # Added prefix for objects
+    parser.add_argument('--prefix', help='Prefix for objects')
 
     args = parser.parse_args()
 
@@ -200,6 +206,5 @@ if __name__ == "__main__":
         print "SDK Version: %s\nController Version: %s" % \
               (sdk_version, args.controller_version)
         exit(0)
-
     netscaler_converter = NetscalerConverter(args)
     netscaler_converter.convert()

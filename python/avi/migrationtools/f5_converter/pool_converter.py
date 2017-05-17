@@ -9,11 +9,11 @@ LOG = logging.getLogger(__name__)
 
 class PoolConfigConv(object):
     @classmethod
-    def get_instance(cls, version, f5_pool_attributes):
+    def get_instance(cls, version, f5_pool_attributes, prefix):
         if version == '10':
-            return PoolConfigConvV10(f5_pool_attributes)
+            return PoolConfigConvV10(f5_pool_attributes, prefix)
         if version in ['11', '12']:
-            return PoolConfigConvV11(f5_pool_attributes)
+            return PoolConfigConvV11(f5_pool_attributes, prefix)
 
     def convert_pool(self, pool_name, f5_config, avi_config, user_ignore,
                      tenant_ref, cloud_ref):
@@ -100,7 +100,7 @@ class PoolConfigConv(object):
                         monitor_obj[0]['tenant_ref'])
                     monitor_refs.append(conv_utils.get_object_ref(
                         monitor_obj[0]['name'], 'healthmonitor',
-                        tenant=tenant))
+                        tenant=tenant, prefix=self.prefix))
                 else:
                     LOG.warning("Monitor not found: %s for pool %s" %
                                 (monitor, pool_name))
@@ -110,6 +110,8 @@ class PoolConfigConv(object):
     def create_pool_object(self, name, desc, servers, pd_action, algo,
                            ramp_time, limits, tenant_ref, cloud_ref):
         tenant, name = conv_utils.get_tenant_ref(name)
+        if self.prefix:
+            name = self.prefix + '-' + name
         pool_obj = {
             'name': name,
             'description': desc,
@@ -221,6 +223,8 @@ class PoolConfigConv(object):
             priority_pool = copy.deepcopy(pool_obj)
             priority_pool['servers'] = pg_dict[priority]
             priority_pool_ref = '%s-%s' % (name, priority)
+            if self.prefix:
+                priority_pool_ref = self.prefix + '-' + priority_pool_ref
             priority_pool['name'] = priority_pool_ref
             pools.append(priority_pool)
             if priority_pool_ref:
@@ -235,6 +239,8 @@ class PoolConfigConv(object):
             priority_list = avi_config['PriorityLabels'].get(tenant,[])
             priority_list.append(priority)
             avi_config['PriorityLabels'][tenant] = priority_list
+        if self.prefix:
+            name = self.prefix + "-" + name
         pg_obj = {
             'name': name,
             'priority_labels_ref': conv_utils.get_object_ref(
@@ -252,11 +258,12 @@ class PoolConfigConv(object):
 
 
 class PoolConfigConvV11(PoolConfigConv):
-    def __init__(self, f5_pool_attributes):
+    def __init__(self, f5_pool_attributes, prefix):
         self.supported_attr = f5_pool_attributes['Pool_supported_attr']
         self.supported_attributes = f5_pool_attributes[
             'Pool_supported_attr_convert_servers_config']
         self.ignore_for_val = f5_pool_attributes['Pool_ignore_val']
+        self.prefix = prefix
 
     def convert_pool(self, pool_name, f5_config, avi_config, user_ignore,
                      tenant_ref, cloud_ref):
@@ -430,10 +437,11 @@ class PoolConfigConvV11(PoolConfigConv):
 
 
 class PoolConfigConvV10(PoolConfigConv):
-    def __init__(self, f5_pool_attributes):
+    def __init__(self, f5_pool_attributes, prefix):
         self.supported_attr = f5_pool_attributes['Pool_supported_attr_1']
         self.supported_attributes = f5_pool_attributes['Pool_supported_attr_2']
         self.ignore_for_val = f5_pool_attributes['Pool_ignore_val']
+        self.prefix = prefix
 
     def convert_pool(self, pool_name, f5_config, avi_config, user_ignore,
                      tenant_ref, cloud_ref):

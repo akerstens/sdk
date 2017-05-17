@@ -49,6 +49,8 @@ class F5Converter(AviConverter):
         self.patch = args.patch
         # vs_filter.py args taken into classs variable
         self.vs_filter = args.vs_filter
+        # Prefix for objects
+        self.prefix = args.prefix
 
     def init_logger_path(self):
         LOG.setLevel(logging.DEBUG)
@@ -139,7 +141,8 @@ class F5Converter(AviConverter):
         avi_config_dict = f5_config_converter.convert(
             f5_config_dict, output_dir, self.vs_state, input_dir,
             self.f5_config_version, self.ssl_profile_merge_check,
-            self.controller_version, user_ignore, self.tenant, self.cloud_name)
+            self.controller_version, self.prefix, user_ignore, self.tenant,
+            self.cloud_name)
 
         avi_config_dict["META"] = {
             "supported_migrations": {
@@ -183,7 +186,7 @@ class F5Converter(AviConverter):
             'current_version')
 
         avi_config = self.process_for_utils(avi_config_dict)
-        self.write_output(avi_config, output_dir)
+        self.write_output(avi_config, output_dir, self.prefix)
 
         if self.option == 'auto-upload':
             self.upload_config_to_controller(avi_config)
@@ -297,7 +300,7 @@ if __name__ == "__main__":
                         help='state of VS created', default='disable')
     parser.add_argument('-l', '--input_folder_location',
                         help='location of input files like cert files ' +
-                             'external monitor scripts', default='./test/certs')
+                             'external monitor scripts', default='./')
     parser.add_argument('--f5_host_ip', help='host ip of f5 instance')
     parser.add_argument('--f5_ssh_user', help='f5 host ssh username')
     parser.add_argument('--f5_ssh_password',
@@ -324,6 +327,8 @@ if __name__ == "__main__":
     # Added command line args to execute vs_filter.py with vs_name.
     parser.add_argument('--vs_filter', help='comma seperated names of '
                                             'virtualservices')
+    # Added prefix for objects
+    parser.add_argument('--prefix', help='Prefix for objects')
 
     args = parser.parse_args()
     # print avi f5 converter version

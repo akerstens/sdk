@@ -275,7 +275,7 @@ def get_content_string_group(name, content_types, tenant):
     return sg_obj
 
 
-def get_vs_ssl_profiles(profiles, avi_config):
+def get_vs_ssl_profiles(profiles, avi_config, prefix):
     """
     Searches for profile refs in converted profile config if not found creates
     default profiles
@@ -292,6 +292,8 @@ def get_vs_ssl_profiles(profiles, avi_config):
         profiles = {profiles: None}
     for key in profiles.keys():
         tenant, name = get_tenant_ref(key)
+        if prefix:
+            name = prefix + '-' + name
         ssl_profile_list = avi_config.get("SSLProfile", [])
         ssl_profiles = [obj for obj in ssl_profile_list if
                         (obj['name'] == name or name in obj.get("dup_of", []))]
@@ -341,7 +343,7 @@ def get_vs_ssl_profiles(profiles, avi_config):
     return vs_ssl_profile_names, pool_ssl_profile_names
 
 
-def get_vs_app_profiles(profiles, avi_config, tenant_ref):
+def get_vs_app_profiles(profiles, avi_config, tenant_ref, prefix):
     """
     Searches for profile refs in converted profile config if not found creates
     default profiles
@@ -360,6 +362,8 @@ def get_vs_app_profiles(profiles, avi_config, tenant_ref):
         profiles = profiles.replace(" {}", "")
         profiles = {profiles: None}
     for name in profiles.keys():
+        if prefix:
+            name = prefix + '-' + name
         app_profiles = [obj for obj in app_profile_list if
                         (obj['name'] == name or name in obj.get("dup_of", []))]
         if app_profiles:
@@ -394,15 +398,18 @@ def get_vs_app_profiles(profiles, avi_config, tenant_ref):
                     "realm": app_profiles[0].pop('realm')
                 }
     if not app_profile_refs:
+        value = 'http'
+        if prefix:
+            value = prefix + '-' + 'http'
         default_app_profile = [obj for obj in app_profile_list if (
-            obj['name'] == 'http' or 'http' in obj.get("dup_of", []))]
+            obj['name'] == value or value in obj.get("dup_of", []))]
         tenant = get_name_from_ref(default_app_profile[0]['tenant_ref'])
         app_profile_refs.append(get_object_ref("http", 'applicationprofile',
-                                               tenant=tenant))
+                                               tenant=tenant, prefix=prefix))
     return app_profile_refs, f_host, realm,  policy_set
 
 
-def get_vs_ntwk_profiles(profiles, avi_config):
+def get_vs_ntwk_profiles(profiles, avi_config, prefix):
     """
     Searches for profile refs in converted profile config if not found creates
     default profiles
@@ -418,6 +425,8 @@ def get_vs_ntwk_profiles(profiles, avi_config):
         profiles = {profiles: None}
     for name in profiles.keys():
         tenant, name = get_tenant_ref(name)
+        if prefix:
+            name = prefix + '-' + name
         ntwk_prof_lst = avi_config.get("NetworkProfile")
         network_profiles = [obj for obj in ntwk_prof_lst if (
             obj['name'] == name or name in obj.get("dup_of", []))]
@@ -867,7 +876,7 @@ def get_project_path():
 
 
 def clone_pool_if_shared(ref, avi_config, vs_name, tenant, p_tenant,
-                         cloud_name='Default-Cloud'):
+                         cloud_name='Default-Cloud', prefix=None):
     """
     clones pool or pool group if its shard between multiple VS or partitions
     in F5
@@ -880,6 +889,8 @@ def clone_pool_if_shared(ref, avi_config, vs_name, tenant, p_tenant,
     """
     is_pool_group = False
     pool_group_obj = None
+    if prefix:
+        ref = prefix + '-' + ref
     pool_obj = [pool for pool in avi_config['Pool'] if pool['name'] == ref]
     if not pool_obj:
         pool_group_obj = [pool for pool in avi_config['PoolGroup']
@@ -977,7 +988,7 @@ def create_self_signed_cert():
 
 
 def get_object_ref(object_name, object_type, tenant='admin',
-                   cloud_name='Default-Cloud'):
+                   cloud_name='Default-Cloud', prefix=None):
     """
     This function defines that to genarte object ref in the format of
     /api/object_type/?tenant=tenant_name&name=object_name&cloud=cloud_name
@@ -988,6 +999,8 @@ def get_object_ref(object_name, object_type, tenant='admin',
     :return: Return generated object ref
     """
     global tenants
+    if prefix:
+        object_name = prefix + '-' + object_name
 
     cloud_supported_types = ['pool', 'poolgroup']
     if not cloud_name:

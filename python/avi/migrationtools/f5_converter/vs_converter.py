@@ -12,11 +12,11 @@ LOG = logging.getLogger(__name__)
 
 class VSConfigConv(object):
     @classmethod
-    def get_instance(cls, version, f5_virtualservice_attributes):
+    def get_instance(cls, version, f5_virtualservice_attributes, prefix):
         if version == '10':
-            return VSConfigConvV10(f5_virtualservice_attributes)
+            return VSConfigConvV10(f5_virtualservice_attributes, prefix)
         if version in ['11', '12']:
-            return VSConfigConvV11(f5_virtualservice_attributes)
+            return VSConfigConvV11(f5_virtualservice_attributes, prefix)
 
 
     def get_persist_ref(self, f5_vs):
@@ -46,6 +46,8 @@ class VSConfigConv(object):
                     conv_utils.add_status_row('virtual', None, vs_name,
                                               final.STATUS_SKIPPED)
                     continue
+                if self.prefix:
+                    vs_name = self.prefix + '-' + vs_name
                 vs_obj = self.convert_vs(vs_name, f5_vs, vs_state, avi_config,
                                          f5_snat_pools, user_ignore, tenant,
                                          cloud_name, controller_version)
@@ -71,11 +73,12 @@ class VSConfigConv(object):
         if enabled:
             enabled = False if "disabled" in f5_vs.keys() else True
         profiles = f5_vs.get("profiles", {})
-        ssl_vs, ssl_pool = conv_utils.get_vs_ssl_profiles(profiles, avi_config)
+        ssl_vs, ssl_pool = conv_utils.get_vs_ssl_profiles(profiles, avi_config,
+                                                          self.prefix)
         app_prof, f_host, realm, policy_set = conv_utils.get_vs_app_profiles(
-            profiles, avi_config, tenant)
-        ntwk_prof = conv_utils.get_vs_ntwk_profiles(profiles, avi_config)
-
+            profiles, avi_config, tenant, self.prefix)
+        ntwk_prof = conv_utils.get_vs_ntwk_profiles(profiles, avi_config,
+                                                    self.prefix)
         oc_prof = False
         for prof in profiles:
             if prof in avi_config.get('OneConnect', []):
@@ -128,8 +131,7 @@ class VSConfigConv(object):
             # TODO: need to revisit after shared pool support implemented
             pool_ref, is_pool_group = conv_utils.clone_pool_if_shared(
                 pool_ref, avi_config, vs_name, tenant, p_tenant,
-                cloud_name=cloud_name)
-
+                cloud_name=cloud_name, prefix=self.prefix)
             if ssl_pool:
                 if is_pool_group:
                     conv_utils.add_ssl_to_pool_group(avi_config, pool_ref,
@@ -217,7 +219,10 @@ class VSConfigConv(object):
                 # converted _sys_https_redirect data script to rule in
                 # http policy
                 if rule == '_sys_https_redirect':
-                    policy_name = rule + '-' + vs_name
+                    if self.prefix:
+                        policy_name = self.prefix + '-' + rule + '-' + vs_name
+                    else:
+                        policy_name = rule + '-' + vs_name
                     policy = {
                         "name": policy_name,
                         "http_request_policy": {
@@ -370,7 +375,7 @@ class VSConfigConv(object):
 
     
 class VSConfigConvV11(VSConfigConv):
-    def __init__(self, f5_virtualservice_attributes):
+    def __init__(self, f5_virtualservice_attributes, prefix):
         self.supported_attr = f5_virtualservice_attributes['VS_supported_attr']
         self.ignore_for_value = \
             f5_virtualservice_attributes['VS_ignore_for_value']
@@ -379,6 +384,7 @@ class VSConfigConvV11(VSConfigConv):
         self.vs_na_attr = \
             f5_virtualservice_attributes['VS_na_attr']
         self.connection_limit = 'connection-limit'
+        self.prefix = prefix
 
     def get_persist_ref(self, f5_vs):
         persist_ref = f5_vs.get("persist", None)
@@ -398,7 +404,7 @@ class VSConfigConvV11(VSConfigConv):
 
 
 class VSConfigConvV10(VSConfigConv):
-    def __init__(self, f5_virtualservice_attributes):
+    def __init__(self, f5_virtualservice_attributes, prefix):
         self.supported_attr = f5_virtualservice_attributes['VS_supported_attr']
         self.ignore_for_value = \
             f5_virtualservice_attributes['VS_ignore_for_value']
@@ -407,6 +413,8 @@ class VSConfigConvV10(VSConfigConv):
         self.unsupported_types = \
             f5_virtualservice_attributes['VS_unsupported_types']
         self.connection_limit = 'limit'
+        self.prefix = prefix
+
 
     def get_persist_ref(self, f5_vs):
         persist_ref = f5_vs.get("persist", None)
