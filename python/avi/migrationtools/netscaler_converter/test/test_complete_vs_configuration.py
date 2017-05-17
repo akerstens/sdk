@@ -9,7 +9,7 @@ def setUp():
     output_data = ''
     output_file = ''
     try:
-        output_file = open('output/input_vs_configuration-Output.json', 'r')
+        output_file = open('output/Output.json', 'r')
     except:
         pass
     if output_file:
@@ -273,10 +273,40 @@ class VSConfig(unittest.TestCase):
             cfg_application_profiles, avi_config_application_profiles)
 
     def test_network_profile(self):
-        pass
+        # Get health monitors from mock data
+        cfg_application_profiles = gSAMPLE_CONFIG.get('ApplicationProfile', [])
+
+        # Get health monitors from avi config after conversion
+        avi_config_application_profiles = avi_config.get('ApplicationProfile',
+                                                         [])
+
+        # check length of cfg_health_monitors and avi_config_health_monitors
+        # should be equal
+        self.assertEqual(
+            len(cfg_application_profiles), len(avi_config_application_profiles))
+
+        # check for cfg_health_monitors and avi_config_health_monitors should
+        # be equal
+        self.assertListEqual(
+            cfg_application_profiles, avi_config_application_profiles)
 
     def test_pki_profile(self):
-        pass
+        # Get health monitors from mock data
+        cfg_application_profiles = gSAMPLE_CONFIG.get('PKIProfile', [])
+
+        # Get health monitors from avi config after conversion
+        avi_config_application_profiles = avi_config.get('PKIProfile',
+                                                         [])
+
+        # check length of cfg_health_monitors and avi_config_health_monitors
+        # should be equal
+        self.assertEqual(
+            len(cfg_application_profiles), len(avi_config_application_profiles))
+
+        # check for cfg_health_monitors and avi_config_health_monitors should
+        # be equal
+        self.assertListEqual(
+            cfg_application_profiles, avi_config_application_profiles)
 
     def test_string_group(self):
         pass
