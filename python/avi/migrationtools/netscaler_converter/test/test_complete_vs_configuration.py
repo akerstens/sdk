@@ -9,7 +9,7 @@ def setUp():
     output_data = ''
     output_file = ''
     try:
-        output_file = open('output/Output.json', 'r')
+        output_file = open('output/input_vs_configuration-Output.json', 'r')
     except:
         pass
     if output_file:
@@ -17,7 +17,7 @@ def setUp():
     avi_config = {}
     if output_data:
         avi_config = json.loads(output_data)
-    cfg_file = open('netscaler_converter/test/test_complete_vs_configuration.cfg', 'r')
+    cfg_file = open('test/test_complete_vs_configuration.cfg', 'r')
     cfg = cfg_file.read()
     global gSAMPLE_CONFIG
     gSAMPLE_CONFIG = json.loads(cfg)
@@ -26,9 +26,9 @@ def setUp():
 class VSConfig(unittest.TestCase):
     # Run input vs config over netscaler tool
     def test_run_input_config_over_ns_tool(self):
-        os.system('python netscaler_converter/netscaler_converter.py -f '
-                  'netscaler_converter/test/input_vs_configuration.conf -l '
-                  'netscaler_converter/test/certs')
+        os.system('python netscaler_converter.py -f '
+                  'test/input_vs_configuration.conf -l '
+                  'netscaler_converter/test/certs --no_profile_merge')
 
     def test_pool_groups(self):
         """
@@ -223,6 +223,78 @@ class VSConfig(unittest.TestCase):
             # Check for list of health monitors
             self.assertListEqual(cfg_pool['health_monitor_refs'],
                                  avi_config_pool[0]['health_monitor_refs'])
+    def test_meta(self):
+        """
+        This test case defines that verify pool groups from avi config after
+        conversion with mock data
+        :return: None
+        """
+        # Get pool groups from mock data
+        cfg_meta = gSAMPLE_CONFIG.get('META', {})
+
+        # Get pool groups from avi config after conversion
+        avi_config_meta = avi_config.get('META', {})
+        self.assertEqual(cfg_meta, avi_config_meta)
+
+    def test_application_persistence_profile(self):
+        # Get health monitors from mock data
+        cfg_application_persistence_profiles = \
+            gSAMPLE_CONFIG.get('ApplicationPersistenceProfile', [])
+
+        # Get health monitors from avi config after conversion
+        avi_config_application_persistence_profiles = \
+            avi_config.get('ApplicationPersistenceProfile', [])
+
+        # check length of cfg_health_monitors and avi_config_health_monitors
+        # should be equal
+        self.assertEqual(len(cfg_application_persistence_profiles),
+                         len(avi_config_application_persistence_profiles))
+
+        # check for cfg_health_monitors and avi_config_health_monitors should
+        # be equal
+        self.assertListEqual(cfg_application_persistence_profiles,
+                             avi_config_application_persistence_profiles)
+
+    def test_application_profile(self):
+        # Get health monitors from mock data
+        cfg_application_profiles = gSAMPLE_CONFIG.get('ApplicationProfile', [])
+
+        # Get health monitors from avi config after conversion
+        avi_config_application_profiles = avi_config.get('ApplicationProfile', [])
+
+        # check length of cfg_health_monitors and avi_config_health_monitors
+        # should be equal
+        self.assertEqual(
+            len(cfg_application_profiles), len(avi_config_application_profiles))
+
+        # check for cfg_health_monitors and avi_config_health_monitors should
+        # be equal
+        self.assertListEqual(
+            cfg_application_profiles, avi_config_application_profiles)
+
+    def test_network_profile(self):
+        pass
+
+    def test_pki_profile(self):
+        pass
+
+    def test_string_group(self):
+        pass
+
+    def test_vsvip(self):
+        # Get health monitors from mock data
+        cfg_vsvips = gSAMPLE_CONFIG.get('VsVip', [])
+
+        # Get health monitors from avi config after conversion
+        avi_config_vsvips = avi_config.get('VsVip', [])
+
+        # check length of cfg_health_monitors and avi_config_health_monitors
+        # should be equal
+        self.assertEqual(len(cfg_vsvips), len(avi_config_vsvips))
+
+        # check for cfg_health_monitors and avi_config_health_monitors should
+        # be equal
+        self.assertListEqual(cfg_vsvips, avi_config_vsvips)
 
 
 if __name__ == '__main__':
