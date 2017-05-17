@@ -27,7 +27,7 @@ class LbvsConverter(object):
 
 
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 profile_merge_check, controller_version, user_ignore):
+                 profile_merge_check, controller_version, user_ignore, prefix):
         """
         Construct a new 'LbvsConverter' object.
         :param tenant_name: Name of tenant
@@ -57,6 +57,8 @@ class LbvsConverter(object):
         self.controller_version = controller_version
         # List of ignore val attributes for add lbvs netscaler command.
         self.lbvs_user_ignore = user_ignore.get('lbvs', [])
+        # Added prefix for objects
+        self.prefix = prefix
 
     def convert(self, ns_config, avi_config, vs_state):
         """
@@ -82,7 +84,7 @@ class LbvsConverter(object):
         policy_converter = PolicyConverter(
             self.tenant_name, self.cloud_name, self.tenant_ref, self.cloud_ref,
             self.lbvs_skip_attrs, self.lbvs_na_attrs, self.lbvs_ignore_vals,
-            self.lbvs_user_ignore)
+            self.lbvs_user_ignore, self.prefix)
         tmp_policy_ref = []
         for key in lb_vs_conf.keys():
             try:
@@ -113,6 +115,8 @@ class LbvsConverter(object):
                     enabled = False
 
                 pool_group_name = '%s-poolgroup' % vs_name
+                if self.prefix:
+                    pool_group_name = self.prefix + '-' + pool_group_name
                 pool_group_name = re.sub('[:]', '-', pool_group_name)
                 pool_group = [pool_group for pool_group in
                               avi_config.get("PoolGroup", [])
@@ -143,7 +147,8 @@ class LbvsConverter(object):
                         LOG.info('Conversion successful : %s' % clt_cmd)
 
                 updated_vs_name = re.sub('[:]', '-', vs_name)
-
+                if self.prefix:
+                    updated_vs_name = self.prefix + '-' + updated_vs_name
                 # Regex to check Vs has IPV6 address if yes the Skipped
                 if re.findall(ns_constants.IPV6_Address, ip_addr):
                     skipped_status = "Skipped:IPV6 not Supported %s" %full_cmd
@@ -190,7 +195,6 @@ class LbvsConverter(object):
                                                       avi_config, [],
                                                       redirect_pools,
                                                       'bind lb vserver', True)
-
                 # TODO move duplicate code for adding policy to vs in ns_util
                 # Convert netscalar policy to AVI http policy set
                 if policy:
@@ -218,6 +222,8 @@ class LbvsConverter(object):
                     if self.profile_merge_check:
                         app_profile = merge_profile_mapping['app_profile'].get(
                             app_profile, None)
+                    if self.prefix:
+                        app_profile = self.prefix + '-' + app_profile
                     app_profile = \
                         ns_util.get_object_ref(app_profile,
                                                OBJECT_TYPE_APPLICATION_PROFILE,
@@ -349,6 +355,8 @@ class LbvsConverter(object):
                         self.lbvs_supported_persist_types:
 
                     profile_name = '%s-persistance-profile' % vs_name
+                    if self.prefix:
+                        profile_name = self.prefix + '-' + profile_name
                     persist_profile = \
                         ns_util.convert_persistance_prof(lb_vs, profile_name,
                                                          self.tenant_ref)
@@ -365,6 +373,8 @@ class LbvsConverter(object):
                     if self.profile_merge_check:
                         ntwk_prof = merge_profile_mapping[
                             'network_profile'].get(ntwk_prof, None)
+                    if self.prefix:
+                        ntwk_prof = self.prefix + '-' + ntwk_prof
                     if ns_util.object_exist('NetworkProfile', ntwk_prof,
                                             avi_config):
                         LOG.info('Conversion successful: Added network profile '
@@ -383,6 +393,8 @@ class LbvsConverter(object):
                 if redirect_url:
                     if parse_version(self.controller_version) >= parse_version(
                             '17.1'):
+                        if self.prefix:
+                            ip_addr = self.prefix + '-' + ip_addr
                         ns_util.create_update_vsvip(
                             ip_addr, avi_config['VsVip'], self.tenant_ref,
                             self.cloud_ref)
@@ -401,7 +413,7 @@ class LbvsConverter(object):
                     is_shared = ns_util.is_shared_same_vip(
                         vs_obj, avi_config['VirtualService'], avi_config,
                         self.tenant_name, self.cloud_name, self.tenant_ref,
-                        self.cloud_ref, self.controller_version)
+                        self.cloud_ref, self.controller_version, self.prefix)
                     if is_shared:
                         skipped_status = 'Skipped: %s Same vip shared by ' \
                                          'another virtual service' % vs_name
@@ -510,7 +522,6 @@ class LbvsConverter(object):
         :param profile_name: Name of persistent profile ref
         :return: None
         """
-
         for pool_ref in pool_group['members']:
             pool_ref = pool_ref['pool_ref'].split('&')[1].split('=')[1]
             pool = [pool for pool in avi_config['Pool'] if

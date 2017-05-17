@@ -388,7 +388,6 @@ def clone_pool(pool_name, prefix, avi_config):
     :param avi_config: avi config dict
     :return: None
     """
-
     pools = [pool for pool in avi_config['Pool'] if pool['name'] == pool_name]
     if pools:
         pool_obj = copy.deepcopy(pools[0])
@@ -458,7 +457,7 @@ def object_exist(object_type, name, avi_config):
 
 
 def is_shared_same_vip(vs, cs_vs_list, avi_config, tenant_name, cloud_name,
-                       tenant_ref, cloud_ref, controller_version):
+                       tenant_ref, cloud_ref, controller_version, prefix):
     """
     This function check for vs sharing same vip
     :param vs: Name of vs
@@ -485,9 +484,13 @@ def is_shared_same_vip(vs, cs_vs_list, avi_config, tenant_name, cloud_name,
         return True
     elif parse_version(controller_version) >= parse_version('17.1'):
         vsvip = vs['vip'][0]['ip_address']['addr']
-        create_update_vsvip(vsvip, avi_config['VsVip'], tenant_ref, cloud_ref)
+        create_update_vsvip(vsvip, avi_config['VsVip'], tenant_ref, cloud_ref,
+                            prefix=prefix)
+        name = vsvip + '-vsvip'
+        if prefix:
+            name = prefix + '-' + vsvip + '-vsvip'
         updated_vsvip_ref = get_object_ref(
-            vsvip + '-vsvip', 'vsvip', tenant_name, cloud_name)
+            name, 'vsvip', tenant_name, cloud_name)
         vs['vsvip_ref'] = updated_vsvip_ref
 
 
@@ -610,7 +613,6 @@ def get_object_ref(object_name, object_type, tenant=None, cloud_name=None):
     :param cloud_name: Name of cloud
     :return: Return generated object ref
     """
-
     cloud_supported_types = ['pool', 'poolgroup', 'vsvip']
     if not cloud_name:
         cloud_name = "Default-Cloud"
@@ -1411,7 +1413,7 @@ def update_vs_complexity_level(vs_csv_row, virtual_service):
         vs_csv_row['Complexity Level'] = COMPLEXITY_BASIC
 
 
-def create_update_vsvip(vip, vsvip_config, tenant_ref, cloud_ref):
+def create_update_vsvip(vip, vsvip_config, tenant_ref, cloud_ref, prefix=None):
     """
     This functions defines that create or update VSVIP object.
     :param vip: vip of VS
@@ -1422,12 +1424,15 @@ def create_update_vsvip(vip, vsvip_config, tenant_ref, cloud_ref):
     """
 
     # Get the exsting vsvip object list if present
+    name = vip + '-vsvip'
+    if prefix:
+        name = prefix + '-' + name
     vsvip = [vip_obj for vip_obj in vsvip_config
-             if vip_obj['name'] == vip +'-vsvip']
+             if vip_obj['name'] == name]
     # If VSVIP object not present then create new VSVIP object.
     if not vsvip:
         vsvip_object = {
-            "name": vip + '-vsvip',
+            "name": name,
             "tenant_ref": tenant_ref,
             "cloud_ref": cloud_ref,
             "vip": [
