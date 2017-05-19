@@ -68,7 +68,7 @@ class MonitorConfigConv(object):
             f5_monitor = self.get_defaults(monitor_config, key)
             monitor_type, name = self.get_name_type(f5_monitor, key)
             if self.prefix:
-                name = self.prefix + '_' + name
+                name = self.prefix + '-' + name
             try:
                 LOG.debug("Converting monitor: %s" % name)
                 if monitor_type not in self.supported_types:
@@ -115,7 +115,7 @@ class MonitorConfigConv(object):
         monitor_dict = dict()
         tenant, name = conv_utils.get_tenant_ref(name)
         if self.prefix:
-            name = self.prefix + '_' + name
+            name = self.prefix + '-' + name
         if tenant_ref != 'admin':
             tenant = tenant_ref
         monitor_dict['tenant_ref'] = conv_utils.get_object_ref(tenant, 'tenant')

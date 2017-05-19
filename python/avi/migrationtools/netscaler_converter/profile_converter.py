@@ -324,8 +324,9 @@ class ProfileConverter(object):
             send_close_notify = ssl_service.get('sendCloseNotify', None)
             if send_close_notify == 'NO':
                 ssl_profile['send_close_notify'] = False
-
             # bind ssl service
+            if self.prefix:
+                ssl_profile_name = ssl_profile_name.strip(self.prefix + '-')
             binding_mapping = bind_ssl_service.get(ssl_profile_name, [])
             if isinstance(binding_mapping, dict):
                 binding_mapping = [binding_mapping]
@@ -345,6 +346,8 @@ class ProfileConverter(object):
                 # Check ssl profile is duplicate of other ssl profile then
                 # skipped this application profile and increment of count
                 # of ssl_merge_count
+                if self.prefix:
+                    ssl_profile_name = self.prefix + '-' + ssl_profile_name
                 dup_of = \
                     ns_util.update_skip_duplicates(
                         ssl_profile, avi_config['SSLProfile'],
@@ -445,6 +448,8 @@ class ProfileConverter(object):
         avi_ssl_prof = dict()
         netscalar_cmd = 'add ssl profile'
         profile_name = re.sub('[:]', '-', profile['attrs'][0])
+        if self.prefix:
+            profile_name = self.prefix + '-' + profile_name
         avi_ssl_prof['name'] = profile_name
         avi_ssl_prof['tenant_ref'] = self.tenant_ref
         scn = profile.get('sendCloseNotify', 'NO')
@@ -496,7 +501,6 @@ class ProfileConverter(object):
             # Added prefix for objects
             if self.prefix:
                 mapping['attrs'][0] = self.prefix + '-' + mapping['attrs'][0]
-
             if 'policyName' in mapping.keys():
                 skipped_status = 'Not supported: %s' % bind_ssl_full_cmd
                 LOG.warning(skipped_status)
@@ -506,7 +510,7 @@ class ProfileConverter(object):
                                        STATUS_COMMAND_NOT_SUPPORTED)
                 continue
             elif 'CA' in mapping.keys():
-                key_cert = ssl_key_and_cert.get(mapping.get('certkeyName'))
+                key_cert = ssl_key_and_cert.get(mapping.get('CA'))
                 if not key_cert or name in tmp_pki_profile_list:
                     continue
                 key_file_name = key_cert.get('key')
@@ -516,7 +520,6 @@ class ProfileConverter(object):
                 netscalar_cmd = 'add ssl certKey'
                 full_cmd = ns_util.get_netscalar_full_command(netscalar_cmd,
                                                               key_cert)
-
                 if not (key_file_name and cert_file_name):
                     skipped_status = 'Missing key or cert file: %s' \
                                      % full_cmd
@@ -550,6 +553,9 @@ class ProfileConverter(object):
                         pki_profile['crl_check'] = False
                     if crl_str:
                         pki_profile["crls"] = [{'body': crl_str}]
+                    if self.prefix:
+                        mapping['attrs'][0] = self.prefix + '-' + \
+                                              mapping['attrs'][0]
                     pki_profile["name"] = mapping['attrs'][0]
                     pki_profile["tenant_ref"] = self.tenant_ref
                     obj['pki'] = pki_profile

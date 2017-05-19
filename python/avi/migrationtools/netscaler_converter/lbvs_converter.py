@@ -203,7 +203,7 @@ class LbvsConverter(object):
                                                                updated_vs_name,
                                                                avi_config,
                                                                self.tenant_name,
-                                                               self.cloud_name)
+                                                               self.cloud_name, userprefix=self.prefix)
                     tmp_policy_ref.append(policy['name'])
                     updated_http_policy_ref = \
                         ns_util.get_object_ref(policy['name'],
@@ -251,7 +251,7 @@ class LbvsConverter(object):
                             ns_util.clone_pool_group(pool_group_ref, vs_name,
                                                      avi_config,
                                                      self.tenant_name,
-                                                     self.cloud_name)
+                                                     self.cloud_name, userprefix=self.prefix)
                     pool_group_ref = re.sub('[:]', '-', pool_group_ref)
                     used_pool_group_ref.append(pool_group_ref)
                     updated_pool_group = [pg for pg in
@@ -298,6 +298,9 @@ class LbvsConverter(object):
                         backup_pool_group_ref = backup_server + '-poolgroup'
                         backup_pool_group_ref = re.sub('[:]', '-',
                                                        backup_pool_group_ref)
+                        if self.prefix:
+                            backup_pool_group_ref = self.prefix + '-' + \
+                                                    backup_pool_group_ref
                         backup_pool_group = [pool_group for pool_group in
                                              avi_config.get("PoolGroup", [])
                                              if pool_group['name'] ==
@@ -314,7 +317,7 @@ class LbvsConverter(object):
                             if pool:
                                 new_backup_pool_ref = \
                                     ns_util.clone_pool(backup_pool_ref, index,
-                                                       avi_config)
+                                                       avi_config, userprefix=self.prefix)
                                 new_backup_pool_ref = \
                                     ns_util.get_object_ref(new_backup_pool_ref,
                                                            OBJECT_TYPE_POOL,
@@ -438,6 +441,9 @@ class LbvsConverter(object):
                         ssl_bindings = [ssl_bindings]
                     for mapping in ssl_bindings:
                         if 'CA' in mapping:
+                            if self.prefix:
+                                mapping['attrs'][0] = self.prefix + '-' + \
+                                                      mapping['attrs'][0]
                             pki_ref = mapping['attrs'][0]
                             if [pki_profile for pki_profile in
                                 avi_config["PKIProfile"] if
@@ -461,6 +467,9 @@ class LbvsConverter(object):
                                     'Added: %s PKI profile %s' % (pki_ref, key))
                         elif 'certkeyName' in mapping:
                             avi_ssl_ref = 'ssl_key_and_certificate_refs'
+                            if self.prefix:
+                                mapping['certkeyName'] = self.prefix + '-' + \
+                                                         mapping['certkeyName']
                             if [obj for obj in
                                 avi_config['SSLKeyAndCertificate']
                                 if obj['name'] == mapping['certkeyName']]:
@@ -492,6 +501,8 @@ class LbvsConverter(object):
                     ssl_vs_mapping = ns_config.get('set ssl vserver', {})
                     mapping = ssl_vs_mapping.get(key, None)
                     ssl_profile_name = re.sub('[:]', '-', key)
+                    if self.prefix:
+                        ssl_profile_name = self.prefix + '-' + ssl_profile_name
                     # Get the merge ssl profile name
                     if self.profile_merge_check:
                         ssl_profile_name = \

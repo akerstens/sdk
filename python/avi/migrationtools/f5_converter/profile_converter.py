@@ -81,7 +81,7 @@ class ProfileConfigConv(object):
                                               final.STATUS_SKIPPED)
                     continue
                 if self.prefix:
-                    name = self.prefix + '_' + name
+                    name = self.prefix + '-' + name
                 LOG.debug("Converting profile: %s" % name)
                 profile = profile_config[key]
                 profile = self.update_with_default_profile(
@@ -279,7 +279,7 @@ class ProfileConfigConvV11(ProfileConfigConv):
         if not tenant_ref == 'admin':
             tenant = tenant_ref
         if self.prefix:
-            name = self.prefix + '_' + name
+            name = self.prefix + '-' + name
         default_profile_name = '%s %s' % (profile_type,
                                           profile_type.replace('-', ''))
         default_ignore = f5_config['profile'].get(default_profile_name, {})
@@ -905,7 +905,7 @@ class ProfileConfigConvV10(ProfileConfigConv):
             tenant = tenant_ref
         old_name = name
         if self.prefix:
-            name = self.prefix + '_' + name
+            name = self.prefix + '-' + name
         default_profile_name = profile_type
         if profile_type in ("clientssl", "serverssl"):
             supported_attr = self.supported_ssl

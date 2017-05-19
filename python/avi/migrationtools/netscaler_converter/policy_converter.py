@@ -151,7 +151,8 @@ class PolicyConverter(object):
             targetLBVserver = bind_conf.get('targetLBVserver', )
             if not targetLBVserver and targetVserver:
                 targetLBVserver = targetVserver
-
+                if self.prefix:
+                    targetLBVserver = self.prefix + '-' + targetLBVserver
             priority_index = int(bind_conf.get('priority', rule_index))
             policy, policy_type = \
                 self.get_policy_from_policy_name(policy_name, policy_config,
@@ -341,7 +342,6 @@ class PolicyConverter(object):
                                    rule_name, ns_policy_complete_cmd,
                                    STATUS_SKIPPED, skipped_status)
             return None, priority_index
-
         policy_rules = {
             'name': name,
             "index": priority_index,
@@ -803,7 +803,8 @@ class PolicyConverter(object):
         :param avi_config: dict of AVI
         :return: http policy action
         """
-
+        if self.prefix:
+            targetLBVserver = self.prefix + '-' + targetLBVserver
         if targetLBVserver in redirect_pools:
             action = {
                 'protocol': 'HTTP',
@@ -823,18 +824,13 @@ class PolicyConverter(object):
         else:
             pool_group_ref = targetLBVserver + '-poolgroup'
             pool_group_ref = re.sub('[:]', '-', pool_group_ref)
-            if self.prefix:
-                pool_group_ref = self.prefix + '-' + pool_group_ref
             pool_group = [pg for pg in avi_config['PoolGroup']
                           if pg['name'] == pool_group_ref]
             index = int(random.random() * 10000)
             if pool_group and pool_group_ref in tmp_pool_ref:
-                pool_group_ref = ns_util.clone_pool_group(pool_group_ref,
-                                                          name + '-%s-' % index,
-                                                          avi_config,
-                                                          self.tenant_name,
-                                                          self.cloud_name)
-
+                pool_group_ref = ns_util.clone_pool_group(
+                    pool_group_ref, name + '-%s' % index, avi_config,
+                    self.tenant_name, self.cloud_name, userprefix=self.prefix)
             updated_pool_group_ref = \
                 ns_util.get_object_ref(pool_group_ref, OBJECT_TYPE_POOL_GROUP,
                                        self.tenant_name, self.cloud_name)

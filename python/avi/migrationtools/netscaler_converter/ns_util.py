@@ -125,7 +125,7 @@ def add_complete_conv_status(ns_config, output_dir, avi_config):
                        row['Status'] == status]
         print '%s: %s' % (status, len(status_list))
     # add skipped list of each object at vs level
-    vs_per_skipped_setting_for_references(avi_config)
+    #vs_per_skipped_setting_for_references(avi_config)
     # Write status report and pivot table in xlsx report
     write_status_report_and_pivot_table_in_xlsx(row_list, output_dir)
 
@@ -380,22 +380,25 @@ def cleanup_config(config):
 
     del config
 
-def clone_pool(pool_name, prefix, avi_config):
+def clone_pool(pool_name, cloned_for, avi_config, userprefix=None):
     """
     This function used for cloning shared pools in netscaler.
     :param pool_name: name of pool
-    :param prefix: cloned for
+    :param cloned_for: cloned for
     :param avi_config: avi config dict
     :return: None
     """
     pools = [pool for pool in avi_config['Pool'] if pool['name'] == pool_name]
     if pools:
         pool_obj = copy.deepcopy(pools[0])
-        pool_name = re.sub('[:]', '-', prefix + pool_obj['name'])
+        pname = pool_obj['name']
+        # if userprefix:
+            # pname =  str(pool_obj['name']).strip(userprefix+'-')
+        pool_name = re.sub('[:]', '-', '%s-%s' % (pname, cloned_for))
         pool_obj['name'] = pool_name
         avi_config['Pool'].append(pool_obj)
         LOG.info("Same pool reference to other object. Clone Pool %s for %s" %
-                 (pool_name, prefix))
+                 (pool_name, cloned_for))
         return pool_obj['name']
     return None
 
@@ -494,7 +497,7 @@ def is_shared_same_vip(vs, cs_vs_list, avi_config, tenant_name, cloud_name,
         vs['vsvip_ref'] = updated_vsvip_ref
 
 
-def clone_http_policy_set(policy, prefix, avi_config, tenant_name, cloud_name):
+def clone_http_policy_set(policy, prefix, avi_config, tenant_name, cloud_name, userprefix=None):
     """
     This function clone pool reused in context switching rule
     :param policy: name of policy
@@ -513,7 +516,7 @@ def clone_http_policy_set(policy, prefix, avi_config, tenant_name, cloud_name):
                     '=')[1]
             pool_group_ref = clone_pool_group(pool_group_ref, policy_name,
                                               avi_config, tenant_name,
-                                              cloud_name)
+                                              cloud_name, userprefix=userprefix)
             if pool_group_ref:
                 updated_pool_group_ref = get_object_ref(pool_group_ref,
                                                         OBJECT_TYPE_POOL_GROUP,
@@ -556,11 +559,11 @@ def get_netscalar_full_command(netscalar_command, obj):
         netscalar_command += ' -%s %s' % (key, obj[key])
     return netscalar_command
 
-def clone_pool_group(pg_name, prefix, avi_config, tenant_name, cloud_name):
+def clone_pool_group(pg_name, cloned_for, avi_config, tenant_name, cloud_name, userprefix=None):
     """
     Used for cloning shared pool group.
     :param pg_name: pool group name
-    :param prefix: clone for
+    :param cloned_for: clone for
     :param avi_config: avi config dict
     :return: None
     """
@@ -568,18 +571,18 @@ def clone_pool_group(pg_name, prefix, avi_config, tenant_name, cloud_name):
                    if pg['name'] == pg_name]
     if pool_groups:
         pool_group = copy.deepcopy(pool_groups[0])
-        pool_group_name = re.sub('[:]', '-', prefix + pg_name)
+        pool_group_name = re.sub('[:]', '-', '%s-%s' % (pg_name, cloned_for))
         pool_group['name'] = pool_group_name
         for member in pool_group.get('members', []):
-            pool_ref = (member['pool_ref']).split('&')[1].split('=')[1]
-            pool_ref = clone_pool(pool_ref, prefix, avi_config)
+            pool_ref = get_name(member['pool_ref'])
+            pool_ref = clone_pool(pool_ref, cloned_for, avi_config, userprefix=userprefix)
             if pool_ref:
                 updated_pool_ref = get_object_ref(pool_ref, OBJECT_TYPE_POOL,
                                                   tenant_name, cloud_name)
                 member['pool_ref'] = updated_pool_ref
         avi_config['PoolGroup'].append(pool_group)
         LOG.info("Same pool group reference to other object. Clone Pool group "
-                 "%s for %s" % (pg_name, prefix))
+                 "%s for %s" % (pg_name, cloned_for))
         return pool_group['name']
     return None
 
