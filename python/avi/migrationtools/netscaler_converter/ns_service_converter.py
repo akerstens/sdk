@@ -157,7 +157,8 @@ class ServiceConverter(object):
                     if pool:
                         if pool_name in used_pool_ref:
                             pool_name = ns_util.clone_pool(pool_name, group_key,
-                                                           avi_config)
+                                                           avi_config,
+                                                           userprefix=self.prefix)
                         pool[0]['lb_algorithm'] = algo
                         updated_pool_ref = \
                             ns_util.get_object_ref(pool_name, OBJECT_TYPE_POOL,
@@ -355,19 +356,25 @@ class ServiceConverter(object):
                             service_conf.get('CA'), OBJECT_TYPE_PKI_PROFILE,
                             self.tenant_name)
                         pool_obj['pki_profile_ref'] = updated_pki_ref
+                    if service_conf.get('certkeyName', None):
+                        certname = service_conf.get('certkeyName') + '-dummy'
+                    if self.prefix:
+                        certname = self.prefix + '-' + \
+                                   service_conf.get('certkeyName') + '-dummy'
                     if service_conf.get('certkeyName', None) \
                             and [key_cert for key_cert
                                  in avi_config['SSLKeyAndCertificate']
-                                 if key_cert['name'] == service_conf.get(
-                                    'certkeyName') + '-dummy']:
+                                 if key_cert['name'] == certname]:
                         ssl_key_cert_ref = \
                             ns_util.get_object_ref(
-                                service_conf.get('certkeyName') + '-dummy',
+                                certname,
                                 OBJECT_TYPE_SSL_KEY_AND_CERTIFICATE,
                                 self.tenant_name)
                         pool_obj['ssl_key_and_certificate_ref'] = \
                             ssl_key_cert_ref
                 ssl_profile_name = re.sub('[:]', '-', key)
+                if self.prefix:
+                    ssl_profile_name = self.prefix + '-' + ssl_profile_name
                 if self.profile_merge_check:
                     # Get the merge ssl profile name
                     ssl_profile_name = merge_profile_mapping['ssl_profile'].get(
@@ -537,6 +544,8 @@ class ServiceConverter(object):
                                                        service)
                 if service and service.get('monitorName', None):
                     monitor_name = service.get('monitorName')
+                    if self.prefix:
+                        monitor_name = self.prefix + '-' + monitor_name
                     if not [monitor for monitor in avi_config['HealthMonitor']
                             if monitor['name'] == monitor_name]:
                         skipped_status = 'External Monitor : Not supported ' \
@@ -550,8 +559,6 @@ class ServiceConverter(object):
                                                STATUS_EXTERNAL_MONITOR,
                                                skipped_status)
                         continue
-                    if self.prefix:
-                        monitor_name = self.prefix + '-' + monitor_name
                     monitor_refs.append(monitor_name)
                     LOG.info('Conversion successful : %s' %
                              full_bind_service_command)

@@ -47,7 +47,7 @@ class VSConfigConv(object):
                                               final.STATUS_SKIPPED)
                     continue
                 if self.prefix:
-                    vs_name = self.prefix + '_' + vs_name
+                    vs_name = self.prefix + '-' + vs_name
                 vs_obj = self.convert_vs(vs_name, f5_vs, vs_state, avi_config,
                                          f5_snat_pools, user_ignore, tenant,
                                          cloud_name, controller_version)
@@ -220,7 +220,7 @@ class VSConfigConv(object):
                 # http policy
                 if rule == '_sys_https_redirect':
                     if self.prefix:
-                        policy_name = self.prefix + '_' + rule + '-' + vs_name
+                        policy_name = self.prefix + '-' + rule + '-' + vs_name
                     else:
                         policy_name = rule + '-' + vs_name
                     policy = {

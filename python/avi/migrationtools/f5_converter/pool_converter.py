@@ -111,7 +111,7 @@ class PoolConfigConv(object):
                            ramp_time, limits, tenant_ref, cloud_ref):
         tenant, name = conv_utils.get_tenant_ref(name)
         if self.prefix:
-            name = self.prefix + '_' + name
+            name = self.prefix + '-' + name
         pool_obj = {
             'name': name,
             'description': desc,
@@ -224,7 +224,7 @@ class PoolConfigConv(object):
             priority_pool['servers'] = pg_dict[priority]
             priority_pool_ref = '%s-%s' % (name, priority)
             if self.prefix:
-                priority_pool_ref = self.prefix + '_' + priority_pool_ref
+                priority_pool_ref = self.prefix + '-' + priority_pool_ref
             priority_pool['name'] = priority_pool_ref
             pools.append(priority_pool)
             if priority_pool_ref:
@@ -240,7 +240,7 @@ class PoolConfigConv(object):
             priority_list.append(priority)
             avi_config['PriorityLabels'][tenant] = priority_list
         if self.prefix:
-            name = self.prefix + "_" + name
+            name = self.prefix + "-" + name
         pg_obj = {
             'name': name,
             'priority_labels_ref': conv_utils.get_object_ref(
