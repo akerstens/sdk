@@ -117,6 +117,7 @@ class NetscalerConverter(AviConverter):
             self.upload_config_to_controller(
                 avi_config)
 
+        return avi_config
 
 
 if __name__ == "__main__":
@@ -213,6 +214,5 @@ if __name__ == "__main__":
         print "SDK Version: %s\nController Version: %s" % \
               (sdk_version, args.controller_version)
         exit(0)
-
     netscaler_converter = NetscalerConverter(args)
     netscaler_converter.convert()
