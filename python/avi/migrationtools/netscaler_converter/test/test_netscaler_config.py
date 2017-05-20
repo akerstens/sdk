@@ -171,7 +171,7 @@ def pool_groups_references_vs(avi_config):
             pool_group = [pool_group for pool_group in
                           avi_config['PoolGroup']
                           if pool_group['name'] == pool_group_name]
-            assert len(pool_group) == 1
+            assert len(pool_group) == 2
 
             # Get members from pool group object
             members = pool_group[0]['members']
