@@ -12,7 +12,7 @@ from avi.migrationtools.netscaler_converter.netscaler_converter import Netscaler
 def netscaler_converter(config_file_name):
     args = Namespace(
         ns_config_file=config_file_name, tenant='admin', cloud_name='Default-Cloud',
-        input_folder_location='test/certs', output_file_path=None,
+        input_folder_location='certs', output_file_path=None,
         option='cli-upload', user='admin', password='avi123',
         controller_ip=None, vs_state='disable', controller_version='17.1',
         ns_host_ip=None, ns_ssh_user=None, ns_ssh_password=None, ns_key_file=None,

@@ -526,10 +526,10 @@ class ProfileConverter(object):
                     continue
                 if key_file_name:
                     ca_str = ns_util.upload_file(
-                        'test/certs' + os.path.sep + key_file_name)
+                        input_dir + os.path.sep + key_file_name)
                 if cert_file_name:
                     crl_str = ns_util.upload_file(
-                        'test/certs' + os.path.sep + cert_file_name)
+                        input_dir + os.path.sep + cert_file_name)
                 if ca_str:
                     pki_profile = dict()
                     pki_profile["ca_certs"] = [{'certificate': ca_str}]

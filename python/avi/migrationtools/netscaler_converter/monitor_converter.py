@@ -150,11 +150,11 @@ class MonitorConverter(object):
                 avi_monitor["type"] = "HEALTH_MONITOR_EXTERNAL"
                 file_name = ns_monitor.get('scriptName')
                 cmd_code = ns_util.upload_file(
-                    'test/certs' + os.path.sep + file_name)
+                    input_dir + os.path.sep + file_name)
                 if not cmd_code:
-                    skipped_status = 'File not found %s : %s' % \
-                                     ('test/certs' + os.path.sep + file_name,
-                                      ns_monitor_complete_command)
+                    skipped_status = 'File not found %s : %s' % (
+                        input_dir + os.path.sep + file_name,
+                        ns_monitor_complete_command)
                     LOG.warning(skipped_status)
                     ns_util.add_status_row(ns_monitor['line_no'],
                                            netscalar_command,
