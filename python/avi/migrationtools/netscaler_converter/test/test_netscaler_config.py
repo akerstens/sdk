@@ -269,10 +269,6 @@ class Namespace:
         self.__dict__.update(kwargs)
 
 class TestNetscalerConverter():
-    @pytest.mark.parametrize("config_file_name", [
-        ('test/input_vs_configuration.conf')
-    ])
-
     def test_netscaler_converter(self, config_file_name):
         avi_config = netscaler_converter(config_file_name)
         count_of_all_entity(avi_config)
