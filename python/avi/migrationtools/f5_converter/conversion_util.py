@@ -400,7 +400,7 @@ def get_vs_app_profiles(profiles, avi_config, tenant_ref, prefix):
     if not app_profile_refs:
         value = 'http'
         if prefix:
-            value = prefix + '_' + 'http'
+            value = prefix + '-' + 'http'
         default_app_profile = [obj for obj in app_profile_list if (
             obj['name'] == value or value in obj.get("dup_of", []))]
         tenant = get_name_from_ref(default_app_profile[0]['tenant_ref'])

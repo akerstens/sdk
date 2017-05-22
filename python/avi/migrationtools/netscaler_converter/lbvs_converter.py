@@ -124,14 +124,6 @@ class LbvsConverter(object):
                 pool_group_ref = None
                 if pool_group:
                     pool_group_ref = pool_group_name
-                # else:
-                #     # Skipped this lb vs if pool group not found in AVI config
-                #     LOG.warning('Pool group not found in avi config for LB VS '
-                #                 '%s' % key)
-                #     ns_util.add_status_row(lb_vs['line_no'], cmd, key, full_cmd,
-                #                            STATUS_INCOMPLETE_CONFIGURATION)
-                #     continue
-
                 redirect_url = lb_vs.get('redirectURL', None)
 
                 http_prof = lb_vs.get('httpProfileName', None)
@@ -203,7 +195,8 @@ class LbvsConverter(object):
                                                                updated_vs_name,
                                                                avi_config,
                                                                self.tenant_name,
-                                                               self.cloud_name, userprefix=self.prefix)
+                                                               self.cloud_name,
+                                                               userprefix=self.prefix)
                     tmp_policy_ref.append(policy['name'])
                     updated_http_policy_ref = \
                         ns_util.get_object_ref(policy['name'],
@@ -251,7 +244,8 @@ class LbvsConverter(object):
                             ns_util.clone_pool_group(pool_group_ref, vs_name,
                                                      avi_config,
                                                      self.tenant_name,
-                                                     self.cloud_name, userprefix=self.prefix)
+                                                     self.cloud_name,
+                                                     userprefix=self.prefix)
                     pool_group_ref = re.sub('[:]', '-', pool_group_ref)
                     used_pool_group_ref.append(pool_group_ref)
                     updated_pool_group = [pg for pg in
@@ -317,7 +311,8 @@ class LbvsConverter(object):
                             if pool:
                                 new_backup_pool_ref = \
                                     ns_util.clone_pool(backup_pool_ref, index,
-                                                       avi_config, userprefix=self.prefix)
+                                                       avi_config,
+                                                       userprefix=self.prefix)
                                 new_backup_pool_ref = \
                                     ns_util.get_object_ref(new_backup_pool_ref,
                                                            OBJECT_TYPE_POOL,

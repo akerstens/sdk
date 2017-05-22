@@ -42,7 +42,7 @@ class AviConverter(object):
     def write_output(self, avi_config, output_dir, prefix):
         file_name = "Output.json"
         if prefix:
-            file_name = prefix + '_' + file_name
+            file_name = prefix + '-' + file_name
         with open(output_dir + os.path.sep + file_name, "w") as \
                 text_file:
             json.dump(avi_config, text_file, indent=4)
