@@ -350,7 +350,8 @@ class CsvsConverter(object):
                                                            updated_vs_name,
                                                            avi_config,
                                                            self.tenant_name,
-                                                           self.cloud_name, userprefix=self.prefix)
+                                                           self.cloud_name,
+                                                           userprefix=self.prefix)
                 updated_http_policy_ref = \
                     ns_util.get_object_ref(policy['name'],
                                            OBJECT_TYPE_HTTP_POLICY_SET,
@@ -383,7 +384,8 @@ class CsvsConverter(object):
                             ns_util.clone_pool_group(updated_pool_group_ref,
                                                       vs_name, avi_config,
                                                       self.tenant_name,
-                                                      self.cloud_name, userprefix=self.prefix)
+                                                      self.cloud_name,
+                                                     userprefix=self.prefix)
                     avi_pool_group_ref = \
                         ns_util.get_object_ref(updated_pool_group_ref,
                                                OBJECT_TYPE_POOL_GROUP,

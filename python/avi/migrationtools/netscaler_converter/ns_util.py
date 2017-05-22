@@ -125,7 +125,7 @@ def add_complete_conv_status(ns_config, output_dir, avi_config):
                        row['Status'] == status]
         print '%s: %s' % (status, len(status_list))
     # add skipped list of each object at vs level
-    #vs_per_skipped_setting_for_references(avi_config)
+    vs_per_skipped_setting_for_references(avi_config)
     # Write status report and pivot table in xlsx report
     write_status_report_and_pivot_table_in_xlsx(row_list, output_dir)
 
@@ -392,8 +392,6 @@ def clone_pool(pool_name, cloned_for, avi_config, userprefix=None):
     if pools:
         pool_obj = copy.deepcopy(pools[0])
         pname = pool_obj['name']
-        # if userprefix:
-            # pname =  str(pool_obj['name']).strip(userprefix+'-')
         pool_name = re.sub('[:]', '-', '%s-%s' % (pname, cloned_for))
         pool_obj['name'] = pool_name
         avi_config['Pool'].append(pool_obj)
@@ -559,7 +557,8 @@ def get_netscalar_full_command(netscalar_command, obj):
         netscalar_command += ' -%s %s' % (key, obj[key])
     return netscalar_command
 
-def clone_pool_group(pg_name, cloned_for, avi_config, tenant_name, cloud_name, userprefix=None):
+def clone_pool_group(pg_name, cloned_for, avi_config, tenant_name, cloud_name,
+                     userprefix=None):
     """
     Used for cloning shared pool group.
     :param pg_name: pool group name
@@ -575,7 +574,8 @@ def clone_pool_group(pg_name, cloned_for, avi_config, tenant_name, cloud_name, u
         pool_group['name'] = pool_group_name
         for member in pool_group.get('members', []):
             pool_ref = get_name(member['pool_ref'])
-            pool_ref = clone_pool(pool_ref, cloned_for, avi_config, userprefix=userprefix)
+            pool_ref = clone_pool(pool_ref, cloned_for, avi_config,
+                                  userprefix=userprefix)
             if pool_ref:
                 updated_pool_ref = get_object_ref(pool_ref, OBJECT_TYPE_POOL,
                                                   tenant_name, cloud_name)

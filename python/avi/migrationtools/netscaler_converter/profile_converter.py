@@ -296,9 +296,11 @@ class ProfileConverter(object):
             ssl_profile_name = ssl_service['attrs'][0]
             ssl_profile_name = re.sub('[:]', '-', ssl_profile_name)
             if self.prefix:
-                ssl_profile_name = self.prefix + '-' + ssl_profile_name
+                updated_ssl_profile_name = self.prefix + '-' + ssl_profile_name
+            else:
+                updated_ssl_profile_name = ssl_profile_name
             ssl_profile = {
-                'name': ssl_profile_name,
+                'name': updated_ssl_profile_name,
                 'tenant_ref': self.tenant_ref,
                 'accepted_versions': []
             }
@@ -325,11 +327,10 @@ class ProfileConverter(object):
             if send_close_notify == 'NO':
                 ssl_profile['send_close_notify'] = False
             # bind ssl service
-            if self.prefix:
-                ssl_profile_name = ssl_profile_name.strip(self.prefix + '-')
             binding_mapping = bind_ssl_service.get(ssl_profile_name, [])
             if isinstance(binding_mapping, dict):
                 binding_mapping = [binding_mapping]
+
             obj = self.get_key_cert(binding_mapping, ssl_key_and_cert,
                                     input_dir, None, ns_config,
                                     bind_ssl_service_command)
@@ -341,7 +342,6 @@ class ProfileConverter(object):
                 avi_config["SSLKeyAndCertificate"].append(obj.get('cert'))
             if obj.get('pki', None):
                 avi_config["PKIProfile"].append(obj.get('pki'))
-
             if self.profile_merge_check:
                 # Check ssl profile is duplicate of other ssl profile then
                 # skipped this application profile and increment of count
@@ -498,9 +498,6 @@ class ProfileConverter(object):
                                                                    mapping)
             bind_ssl_success = False
             skipped_status = None
-            # Added prefix for objects
-            if self.prefix:
-                mapping['attrs'][0] = self.prefix + '-' + mapping['attrs'][0]
             if 'policyName' in mapping.keys():
                 skipped_status = 'Not supported: %s' % bind_ssl_full_cmd
                 LOG.warning(skipped_status)
@@ -510,7 +507,7 @@ class ProfileConverter(object):
                                        STATUS_COMMAND_NOT_SUPPORTED)
                 continue
             elif 'CA' in mapping.keys():
-                key_cert = ssl_key_and_cert.get(mapping.get('CA'))
+                key_cert = ssl_key_and_cert.get(mapping.get('certkeyName'))
                 if not key_cert or name in tmp_pki_profile_list:
                     continue
                 key_file_name = key_cert.get('key')
