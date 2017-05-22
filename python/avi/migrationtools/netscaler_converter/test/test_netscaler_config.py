@@ -12,12 +12,12 @@ from avi.migrationtools.netscaler_converter.netscaler_converter import Netscaler
 def netscaler_converter(config_file_name):
     args = Namespace(
         ns_config_file=config_file_name, tenant='admin', cloud_name='Default-Cloud',
-        input_folder_location='test/certs', output_file_path=None,
+        input_folder_location='test/certs', output_file_path='/home/chaitanya/config-converter_new/sdk/python/avi/migrationtools/netscaler_converter/htmlcov',
         option='cli-upload', user='admin', password='avi123',
         controller_ip=None, vs_state='disable', controller_version='17.1',
         ns_host_ip=None, ns_ssh_user=None, ns_ssh_password=None, ns_key_file=None,
         ns_passphrase_file=None, version=None, no_profile_merge=True,
-        patch=None, vs_filter=None, ignore_config=None)
+        patch=None, vs_filter=None, ignore_config=None, prefix='abc')
     netscaler_converter = NetscalerConverter(args)
     avi_config = netscaler_converter.convert()
     return avi_config
@@ -264,6 +264,14 @@ def ssl_key_and_cert_reference_vs(avi_config):
                      if key_cert['name'] == ssl_key_and_certificate_ref]
                 assert len(ssl_cert_key) == 1
 
+def check_prefix(avi_config, prefix):
+    for key in avi_config:
+        if key == "META":
+            continue
+        object_list = avi_config[key]
+        for obj in object_list:
+            assert prefix in obj['name']
+
 class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -277,3 +285,4 @@ class TestNetscalerConverter():
         avi_config = netscaler_converter(config_file_name)
         count_of_all_entity(avi_config)
         check_references(avi_config)
+        check_prefix(avi_config, 'abc')

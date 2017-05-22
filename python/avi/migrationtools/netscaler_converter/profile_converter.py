@@ -508,7 +508,7 @@ class ProfileConverter(object):
                 continue
             elif 'CA' in mapping.keys():
                 key_cert = ssl_key_and_cert.get(mapping.get('certkeyName'))
-                if not key_cert or name in tmp_pki_profile_list:
+                if not key_cert or mapping['attrs'][0] in tmp_pki_profile_list:
                     continue
                 key_file_name = key_cert.get('key')
                 cert_file_name = key_cert.get('cert')

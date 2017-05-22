@@ -356,11 +356,11 @@ class ServiceConverter(object):
                             service_conf.get('CA'), OBJECT_TYPE_PKI_PROFILE,
                             self.tenant_name)
                         pool_obj['pki_profile_ref'] = updated_pki_ref
-                    if service_conf.get('certkeyName', None):
-                        certname = service_conf.get('certkeyName') + '-dummy'
-                    if self.prefix:
+                    if self.prefix and service_conf.get('certkeyName', None):
                         certname = self.prefix + '-' + \
                                    service_conf.get('certkeyName') + '-dummy'
+                    elif service_conf.get('certkeyName', None):
+                        certname = service_conf.get('certkeyName') + '-dummy'
                     if service_conf.get('certkeyName', None) \
                             and [key_cert for key_cert
                                  in avi_config['SSLKeyAndCertificate']
