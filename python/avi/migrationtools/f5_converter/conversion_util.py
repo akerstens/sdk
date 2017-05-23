@@ -293,7 +293,7 @@ def get_vs_ssl_profiles(profiles, avi_config, prefix):
     for key in profiles.keys():
         tenant, name = get_tenant_ref(key)
         if prefix:
-            name = prefix + '_' + name
+            name = prefix + '-' + name
         ssl_profile_list = avi_config.get("SSLProfile", [])
         ssl_profiles = [obj for obj in ssl_profile_list if
                         (obj['name'] == name or name in obj.get("dup_of", []))]
@@ -363,7 +363,7 @@ def get_vs_app_profiles(profiles, avi_config, tenant_ref, prefix):
         profiles = {profiles: None}
     for name in profiles.keys():
         if prefix:
-            name = prefix + '_' + name
+            name = prefix + '-' + name
         app_profiles = [obj for obj in app_profile_list if
                         (obj['name'] == name or name in obj.get("dup_of", []))]
         if app_profiles:
@@ -426,7 +426,7 @@ def get_vs_ntwk_profiles(profiles, avi_config, prefix):
     for name in profiles.keys():
         tenant, name = get_tenant_ref(name)
         if prefix:
-            name = prefix + '_' + name
+            name = prefix + '-' + name
         ntwk_prof_lst = avi_config.get("NetworkProfile")
         network_profiles = [obj for obj in ntwk_prof_lst if (
             obj['name'] == name or name in obj.get("dup_of", []))]
@@ -890,7 +890,7 @@ def clone_pool_if_shared(ref, avi_config, vs_name, tenant, p_tenant,
     is_pool_group = False
     pool_group_obj = None
     if prefix:
-        ref = prefix + '_' + ref
+        ref = prefix + '-' + ref
     pool_obj = [pool for pool in avi_config['Pool'] if pool['name'] == ref]
     if not pool_obj:
         pool_group_obj = [pool for pool in avi_config['PoolGroup']
@@ -1000,7 +1000,7 @@ def get_object_ref(object_name, object_type, tenant='admin',
     """
     global tenants
     if prefix:
-        object_name = prefix + '_' + object_name
+        object_name = prefix + '-' + object_name
 
     cloud_supported_types = ['pool', 'poolgroup']
     if not cloud_name:
