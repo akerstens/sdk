@@ -458,7 +458,8 @@ def update_service(port, vs, enable_ssl):
     return service_updated
 
 
-def get_service_obj(destination, vs_list, enable_ssl, controller_version):
+def get_service_obj(destination, avi_config, enable_ssl, controller_version,
+                    tenant_name, cloud_name):
     """
     Checks port overlapping scenario for port value 0 in F5 config
     :param destination: IP and Port destination of VS
@@ -473,11 +474,11 @@ def get_service_obj(destination, vs_list, enable_ssl, controller_version):
     # Get the list of vs which shared the same vip
     if parse_version(controller_version) >= parse_version('17.1'):
         vs_dup_ips = \
-            [vs for vs in vs_list if vs['vip'][0]['ip_address']['addr'] ==
+            [vs for vs in avi_config['VirtualService'] if vs['vip'][0]['ip_address']['addr'] ==
              ip_addr]
     else:
         vs_dup_ips = \
-            [vs for vs in vs_list if vs['ip_address']['addr'] == ip_addr]
+            [vs for vs in avi_config['VirtualService'] if vs['ip_address']['addr'] == ip_addr]
 
     if port == 'any':
         port = 0
@@ -513,7 +514,14 @@ def get_service_obj(destination, vs_list, enable_ssl, controller_version):
         else:
             services_obj = [{'port': 1, 'port_range_end': conv_const.PORT_END,
                              'enable_ssl': enable_ssl}]
-    return services_obj, ip_addr
+
+    updated_vsvip_ref = None
+    if parse_version(controller_version) >= parse_version('17.1'):
+        create_update_vsvip(ip_addr, avi_config['VsVip'], get_object_ref(tenant_name, 'tenant'), get_object_ref(
+                cloud_name, 'cloud', tenant=tenant_name))
+        updated_vsvip_ref = get_object_ref(
+            ip_addr + '-vsvip', 'vsvip', tenant_name, cloud_name)
+    return services_obj, ip_addr, updated_vsvip_ref
 
 
 def clone_pool(pool_name, vs_name, avi_pool_list, tenant=None):
@@ -989,7 +997,7 @@ def get_object_ref(object_name, object_type, tenant='admin',
     """
     global tenants
 
-    cloud_supported_types = ['pool', 'poolgroup']
+    cloud_supported_types = ['pool', 'poolgroup', 'vsvip']
     if not cloud_name:
         cloud_name = "Default-Cloud"
 
@@ -1493,3 +1501,35 @@ def update_vs_complexity_level(vs_csv_row, virtual_service):
         vs_csv_row['Complexity Level'] = conv_const.COMPLEXITY_ADVANCED
     else:
         vs_csv_row['Complexity Level'] = conv_const.COMPLEXITY_BASIC
+
+
+def create_update_vsvip(vip, vsvip_config, tenant_ref, cloud_ref):
+    """
+    This functions defines that create or update VSVIP object.
+    :param vip: vip of VS
+    :param vsvip_config: List of vs object
+    :param tenant_ref: tenant reference
+    :param cloud_ref: cloud reference
+    :return: None
+    """
+
+    # Get the exsting vsvip object list if present
+    vsvip = [vip_obj for vip_obj in vsvip_config
+             if vip_obj['name'] == vip +'-vsvip']
+    # If VSVIP object not present then create new VSVIP object.
+    if not vsvip:
+        vsvip_object = {
+            "name": vip + '-vsvip',
+            "tenant_ref": tenant_ref,
+            "cloud_ref": cloud_ref,
+            "vip": [
+                {
+                    "vip_id": "0",
+                    "ip_address": {
+                        "type": "V4",
+                        "addr": vip
+                    }
+                }
+            ],
+        }
+        vsvip_config.append(vsvip_object)
