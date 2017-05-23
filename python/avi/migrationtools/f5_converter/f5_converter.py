@@ -59,6 +59,7 @@ class F5Converter(AviConverter):
         self.vs_filter = args.vs_filter
         self.ansible_skip_types = args.ansible_skip_types
         self.ansible_filter_types = args.ansible_filter_types
+        self.create_ansible = args.ansible
 
     def init_logger_path(self):
         LOG.setLevel(logging.DEBUG)
@@ -205,11 +206,12 @@ class F5Converter(AviConverter):
 
         avi_config = self.process_for_utils(avi_config_dict)
         self.write_output(avi_config, output_dir, '%s-Output.json' % report_name)
-        avi_traffic= AviAnsibleConverter(avi_config, output_dir,
-                                         skip_types=self.ansible_skip_types,
-                                         filter_types=self.ansible_filter_types)
-        avi_traffic.write_ansible_playbook(self.f5_host_ip, self.f5_ssh_user,
-                                           self.f5_ssh_password)
+        if self.create_ansible:
+            avi_traffic = AviAnsibleConverter(
+                avi_config, output_dir, skip_types=self.ansible_skip_types,
+                filter_types=self.ansible_filter_types)
+            avi_traffic.write_ansible_playbook(
+                self.f5_host_ip, self.f5_ssh_user, self.f5_ssh_password)
         if self.option == 'auto-upload':
             self.upload_config_to_controller(avi_config)
 
@@ -361,6 +363,10 @@ if __name__ == "__main__":
                              'include during conversion.\n Eg. -f VirtualService'
                              ',Pool will do ansible conversion only for '
                              'Virtualservice and Pool objects',default=[])
+    # Create Ansible Script based on Flag
+    parser.add_argument('--ansible',
+                        help='Flag for create ansible file', default=False)
+
 
     args = parser.parse_args()
     # print avi f5 converter version
