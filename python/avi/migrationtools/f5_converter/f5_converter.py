@@ -59,6 +59,9 @@ class F5Converter(AviConverter):
         self.vs_filter = args.vs_filter
         self.ansible_skip_types = args.ansible_skip_types
         self.ansible_filter_types = args.ansible_filter_types
+        self.create_ansible = args.ansible
+        # Prefix for objects
+        self.prefix = args.prefix
 
     def init_logger_path(self):
         LOG.setLevel(logging.DEBUG)
@@ -67,7 +70,8 @@ class F5Converter(AviConverter):
                 os.path.basename(self.bigip_config_file))[0]
         else:
             report_name = 'converter.log'
-        formatter = '[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s'
+        formatter = '[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] ' \
+                    '%(message)s'
         logging.basicConfig(
             filename=os.path.join(self.output_file_path, report_name),
             level=logging.DEBUG, format=formatter)
@@ -155,12 +159,16 @@ class F5Converter(AviConverter):
         LOG.debug('Conversion started')
         self.dict_merge(f5_defaults_dict, f5_config_dict)
         f5_config_dict = f5_defaults_dict
-        report_name = os.path.splitext(os.path.basename(self.bigip_config_file))[0]
+        if self.bigip_config_file:
+            report_name = os.path.splitext(os.path.basename(
+                self.bigip_config_file))[0]
+        else:
+            report_name = 'converter.log'
         avi_config_dict = f5_config_converter.convert(
             f5_config_dict, output_dir, self.vs_state, input_dir,
             self.f5_config_version, self.ssl_profile_merge_check,
-            self.controller_version, report_name, user_ignore, self.tenant,
-            self.cloud_name)
+            self.controller_version, report_name, self.prefix, user_ignore,
+            self.tenant, self.cloud_name)
 
         avi_config_dict["META"] = {
             "supported_migrations": {
@@ -204,12 +212,13 @@ class F5Converter(AviConverter):
             'current_version')
 
         avi_config = self.process_for_utils(avi_config_dict)
-        self.write_output(avi_config, output_dir, '%s-Output.json' % report_name)
-        avi_traffic= AviAnsibleConverter(avi_config, output_dir,
-                                         skip_types=self.ansible_skip_types,
-                                         filter_types=self.ansible_filter_types)
-        avi_traffic.write_ansible_playbook(self.f5_host_ip, self.f5_ssh_user,
-                                           self.f5_ssh_password)
+        self.write_output(avi_config, output_dir, '%s-Output.json' %
+                          report_name)
+        if self.create_ansible:
+            avi_traffic = AviAnsibleConverter(
+                avi_config, output_dir, self.prefix)
+            avi_traffic.write_ansible_playbook(
+                self.f5_host_ip, self.f5_ssh_user, self.f5_ssh_password)
         if self.option == 'auto-upload':
             self.upload_config_to_controller(avi_config)
 
@@ -254,10 +263,11 @@ class F5Converter(AviConverter):
             with open(dir_path + os.path.sep + "f5_v%s_defaults.conf" %
                     self.f5_config_version, "r") as defaults_file:
                 if bool(self.skip_default_file):
-                    LOG.warning('Skipped default file : %s' % defaults_file.name)
+                    LOG.warning(
+                        'Skipped default file : %s' % defaults_file.name)
                     return f5_defaults_dict
-                f5_defaults_dict = f5_parser.parse_config(defaults_file.read(),
-                                                          self.f5_config_version)
+                f5_defaults_dict = f5_parser.parse_config(
+                    defaults_file.read(), self.f5_config_version)
 
         return f5_defaults_dict
 
@@ -282,10 +292,12 @@ if __name__ == "__main__":
         f5_converter.py -f  bigip.conf --no_profile_merge
 
     Example to download config from F5 host and convert to avi config:
-        f5_converter.py --f5_host_ip "1.1.1.1" --f5_ssh_user "username" --f5_ssh_password "password"
+        f5_converter.py --f5_host_ip "1.1.1.1" --f5_ssh_user
+        "username" --f5_ssh_password "password"
 
     Example to auto upload to controller after conversion:
-            f5_converter.py -f  bigip.conf -O auto-upload -c 2.2.2.2 -u username -p password -t tenant
+            f5_converter.py -f  bigip.conf -O auto-upload -c 2.2.2.2 -u
+            username -p password -t tenant
     '''
 
 
@@ -322,7 +334,7 @@ if __name__ == "__main__":
                         help='state of VS created', default='disable')
     parser.add_argument('-l', '--input_folder_location',
                         help='location of input files like cert files ' +
-                             'external monitor scripts', default='./test/certs')
+                             'external monitor scripts', default='./')
     parser.add_argument('--f5_host_ip', help='host ip of f5 instance')
     parser.add_argument('--f5_ssh_user', help='f5 host ssh username')
     parser.add_argument('--f5_ssh_password',
@@ -344,8 +356,8 @@ if __name__ == "__main__":
                         help='Flag for ssl profile merge', action='store_false')
     # Added command line args to execute config_patch file with related avi
     # json file location and patch location
-    parser.add_argument('--patch', help='Run config_patch please provide location of '
-                                        'patch.yaml')
+    parser.add_argument('--patch', help='Run config_patch please provide '
+                                        'location of patch.yaml')
     # Added command line args to execute vs_filter.py with vs_name.
     parser.add_argument('--vs_filter', help='comma seperated names of '
                                             'virtualservices')
@@ -358,9 +370,16 @@ if __name__ == "__main__":
     # Added command line args to take skip type for ansible playbook
     parser.add_argument('--ansible_filter_types',
                         help='Comma separated list of Avi Objects types to '
-                             'include during conversion.\n Eg. -f VirtualService'
-                             ',Pool will do ansible conversion only for '
-                             'Virtualservice and Pool objects',default=[])
+                             'include during conversion.\n Eg. -f '
+                             'VirtualService, Pool will do ansible conversion '
+                             'only for Virtualservice and Pool objects',
+                        default=[])
+    # Create Ansible Script based on Flag
+    parser.add_argument('--ansible',
+                        help='Flag for create ansible file', default=False)
+    # Added prefix for objects
+    parser.add_argument('--prefix', help='Prefix for objects')
+
 
     args = parser.parse_args()
     # print avi f5 converter version

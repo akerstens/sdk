@@ -15,7 +15,7 @@ class MonitorConverter(object):
 
 
     def __init__(self, tenant_name, cloud_name, tenant_ref, cloud_ref,
-                 user_ignore):
+                 user_ignore, prefix):
         """
         Construct a new 'MonitorConverter' object.
         :param tenant_name: Name of tenant
@@ -23,6 +23,7 @@ class MonitorConverter(object):
         :param tenant_ref: Tenant reference
         :param cloud_ref: Cloud Reference
         :param user_ignore: Dict of user ignore attributes
+        :param: prefix: Added prefix for objects
         """
 
         self.monitor_skip_attrs = \
@@ -39,6 +40,8 @@ class MonitorConverter(object):
         self.cloud_ref = cloud_ref
         # List of ignore val attributes for add lb monitor netscaler command.
         self.user_ignore = user_ignore.get('monitor', [])
+        # Added prefix flag
+        self.prefix = prefix
 
     def convert(self, ns_config, avi_config, input_dir):
         """
@@ -63,15 +66,15 @@ class MonitorConverter(object):
             ns_monitor_type = ns_monitor['attrs'][1]
             if ns_monitor_type not in supported_types:
                 # Skipped health monitor if type is not supported
-                ns_util.add_status_row(ns_monitor['line_no'], netscalar_command,
-                                       name, ns_monitor_complete_command,
-                                       STATUS_EXTERNAL_MONITOR)
+                ns_util.add_status_row(
+                    ns_monitor['line_no'], netscalar_command,
+                    name, ns_monitor_complete_command, STATUS_EXTERNAL_MONITOR)
                 LOG.warning('Monitor type %s not supported skipped:%s' %
                          (ns_monitor_type, name))
                 continue
-            avi_monitor = self.convert_monitor(ns_monitor, input_dir,
-                                               netscalar_command,
-                                               ns_monitor_complete_command)
+            avi_monitor = self.convert_monitor(
+                 ns_monitor, input_dir, netscalar_command,
+                ns_monitor_complete_command)
             if not avi_monitor:
                 continue
             # Add summery of this lb vs in CSV/report
@@ -80,9 +83,9 @@ class MonitorConverter(object):
                 self.monitor_indirect_list,
                 ignore_for_val=self.monitor_ignore_vals,
                 user_ignore_val=self.user_ignore)
-            ns_util.add_conv_status(ns_monitor['line_no'], netscalar_command,
-                                    name, ns_monitor_complete_command,
-                                    conv_status, avi_monitor)
+            ns_util.add_conv_status(
+                ns_monitor['line_no'], netscalar_command, name,
+                ns_monitor_complete_command, conv_status, avi_monitor)
             avi_config['HealthMonitor'].append(avi_monitor)
             LOG.debug("Health monitor conversion completed : %s" % name)
 
@@ -101,7 +104,10 @@ class MonitorConverter(object):
 
         avi_monitor = dict()
         try:
-
+            # Added prefix for objects
+            if self.prefix:
+                ns_monitor['attrs'][0] = self.prefix + '-' + \
+                                         ns_monitor['attrs'][0]
             LOG.debug('Conversion started for monitor %s' %
                       ns_monitor['attrs'][0])
             avi_monitor["name"] = (ns_monitor['attrs'][0]).strip().\
@@ -156,11 +162,10 @@ class MonitorConverter(object):
                                      (input_dir + os.path.sep + file_name,
                                       ns_monitor_complete_command)
                     LOG.warning(skipped_status)
-                    ns_util.add_status_row(ns_monitor['line_no'],
-                                           netscalar_command,
-                                           avi_monitor["name"],
-                                           ns_monitor_complete_command,
-                                           STATUS_MISSING_FILE, skipped_status)
+                    ns_util.add_status_row(
+                        ns_monitor['line_no'], netscalar_command,
+                        avi_monitor["name"], ns_monitor_complete_command,
+                        STATUS_MISSING_FILE, skipped_status)
                     return None
                 ext_monitor = {
                     "command_code": cmd_code,
