@@ -108,6 +108,7 @@ class MonitorConfigConv(object):
         :return:
         """
         # Condition create  sslkeyandcert.
+        converted_objs = []
         key_file_name = f5_monitor.get('key', None)
         cert_file_name = f5_monitor.get('cert', None)
         folder_path = input_dir + os.path.sep
@@ -131,11 +132,23 @@ class MonitorConfigConv(object):
                 'key_passphrase': '',
                 'type': 'SSL_CERTIFICATE_TYPE_VIRTUALSERVICE'
             }
+        # Added condition for merging sslkeyandcert
+        if ssl_kc_obj and 'dummy' not in ssl_kc_obj['name']:
+            conv_utils.update_skip_duplicates(
+                ssl_kc_obj, avi_config['SSLKeyAndCertificate'],
+                'key_cert', converted_objs, name, None)
+        else:
             avi_config['SSLKeyAndCertificate'].append(ssl_kc_obj)
-            ref = conv_utils.get_object_ref(
-                name, "sslkeyandcertificate", tenant, cloud_name)
-            monitor_dict["https_monitor"]['ssl_attributes'][
-                'ssl_key_and_certificate_ref'] = ref
+        ssl_key_cert_list = avi_config.get("SSLKeyAndCertificate", [])
+        key_cert = [obj for obj in ssl_key_cert_list if
+                    (obj['name'] == name or obj['name'] == name + '-dummy'
+                     or name in obj.get("dup_of", []))]
+        if key_cert:
+            name = key_cert[0]['name']
+        ref = conv_utils.get_object_ref(
+             name, "sslkeyandcertificate", tenant, cloud_name)
+        monitor_dict["https_monitor"]['ssl_attributes'][
+             'ssl_key_and_certificate_ref'] = ref
         LOG.info('Added new SSL key and certificate for %s' % name)
 
     def convert(self, f5_config, avi_config, input_dir, user_ignore, tenant,
