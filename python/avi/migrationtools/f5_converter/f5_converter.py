@@ -68,7 +68,7 @@ class F5Converter(AviConverter):
         self.not_in_use = args.not_in_use
         # Added args for baseline profile json file to be changed
         self.profile_path = args.baseline_profile
-
+        self.test_vip = args.test_vip
 
     def print_pip_and_controller_version(self):
         # Added input parameters to log file
@@ -193,8 +193,10 @@ class F5Converter(AviConverter):
         self.write_output(avi_config, output_dir, '%s-Output.json' %
                           report_name)
         if self.create_ansible:
+            # print "inside f5", self.test_vip
             avi_traffic = AviAnsibleConverter(
-                avi_config, output_dir, self.prefix, self.not_in_use)
+                avi_config, output_dir, self.prefix, self.not_in_use,
+                test_vip=self.test_vip)
             avi_traffic.write_ansible_playbook(
                 self.f5_host_ip, self.f5_ssh_user, self.f5_ssh_password)
         if self.option == 'auto-upload':
@@ -342,10 +344,10 @@ if __name__ == "__main__":
                                             'virtualservices')
     # Added command line args to take skip type for ansible playbook
     parser.add_argument('--ansible_skip_types',
-                        help='Comma separated list of Avi Object types to skip '
+                        help='Comma separated list of Avi Object types to skip'
                              'during conversion.\n  Eg. -s DebugController,'
-                             'ServiceEngineGroup will skip debugcontroller and '
-                             'serviceengine objects',default=DEFAULT_SKIP_TYPES)
+                             'ServiceEngineGroup will skip debugcontroller and'
+                             'serviceengine objects', default=DEFAULT_SKIP_TYPES)
     # Added command line args to take skip type for ansible playbook
     parser.add_argument('--ansible_filter_types',
                         help='Comma separated list of Avi Objects types to '
@@ -356,13 +358,20 @@ if __name__ == "__main__":
     # Create Ansible Script based on Flag
     parser.add_argument('--ansible',
                         help='Flag for create ansible file', action='store_true')
+
+    # Adding support for test vip
+    parser.add_argument('--test_vip',
+                        help='Enable test vip for ansible generated file '
+                             'It will replace the original vip '
+                             'Note: The actual ip will vary from input to output'
+                             'use it with caution ')
     # Added prefix for objects
     parser.add_argument('--prefix', help='Prefix for objects')
 
     # Added snatpool conversion option
     parser.add_argument('--convertsnat',
                         help='Flag for converting snatpool into individual addresses',
-                        action = "store_true")
+                        action="store_true")
     # Added not in use flag
     parser.add_argument('--not_in_use',
                         help='Flag for skipping not in use object',

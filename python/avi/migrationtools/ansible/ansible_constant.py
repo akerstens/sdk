@@ -91,7 +91,8 @@ DEFAULT_META_ORDER = [
         "VSDataScriptSet",
         "VirtualService",
         "Alert",
-        "Application"
+        "Application",
+        "VsVip"
     ]
 
 HTTP_TYPE = 'http'
