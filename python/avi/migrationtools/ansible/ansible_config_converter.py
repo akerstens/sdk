@@ -24,7 +24,7 @@ from avi.migrationtools.ansible.ansible_constant import \
      CONTROLLER_INPUT, USER_NAME, PASSWORD_NAME, STATE, DISABLE, BIGIP_VS_SERVER,
      DELEGETE_TO, LOCAL_HOST, ENABLE, F5_SERVER, F5_USERNAME, F5_PASSWORD,
      AVI_TRAFFIC, PORT, ADDR, VS_NAME, WHEN, RESULT, REGISTER, VALUE, TENANT,
-     ANSIBLE_STR)
+     ANSIBLE_STR, RESULT_SUCCESS)
 
 DEFAULT_SKIP_TYPES = DEFAULT_SKIP_TYPES
 LOG = logging.getLogger(__name__)
@@ -141,21 +141,23 @@ class AviAnsibleConverter(object):
                          if 'name' in obj else obj_type)
             task_id = 'avi_%s' % obj_type.lower()
             
-            # replacing test vips for both versions 17.1 and 
-            test_vip = self.test_vip.split('.')[:3]
-            if self.api_version == '16.4':
-                if task.get('ip_address', []):
-                    task['ip_address']['addr']\
-                        = '.'.join(test_vip +\
-                         task['ip_address']['addr'].split('.')[3:])
-            else:
-                if task.get('vip', []):
-                    for id, ip in enumerate(task['vip']):
-                        task['vip'][id]['ip_address']['addr']\
-                         = '.'.join(test_vip +\
-                         task['vip'][id]['ip_address']['addr'].split('.')[3:])
-                    if task.get('vsvip_ref', []):
-                            task.get('vsvip_ref', [])
+            # replacing test vips for both versions 17.1 and 16.4
+            if self.test_vip:
+                test_vip = self.test_vip.split('.')[:3]
+                if self.api_version == '16.4':
+                    if task.get('ip_address', []):
+                        task['ip_address']['addr']\
+                            = '.'.join(test_vip +
+                            task['ip_address']['addr'].split('.')[3:])
+                else:
+                    if task.get('vip', []):
+                        for id, ip in enumerate(task['vip']):
+                            task['vip'][id]['ip_address']['addr']\
+                            = '.'.join(test_vip +
+                            task['vip'][id]['ip_address']['addr'].split('.')[3:])
+                        if task.get('vsvip_ref', []):
+                                task.get('vsvip_ref', [])
+
             task.update({API_VERSION: self.api_version})
             # Check object present in list for tag.
             name = '%s-%s'%(obj['name'], obj_type)
@@ -258,7 +260,8 @@ class AviAnsibleConverter(object):
             })
 
     def generate_avi_vs_traffic(self, vs_dict, ansible_dict,
-                                application_profile, tenant='admin'):
+                                application_profile, tenant='admin',
+                                test_vip=None):
         """
         This function is used for generating tags for avi traffic.
         :param vs_dict: avi virtualservice attributes.
@@ -274,6 +277,9 @@ class AviAnsibleConverter(object):
         if avi_traffic_dict[REQEST_TYPE] != 'dns':
             avi_traffic_dict[PORT] = vs_dict[SERVICES][0][PORT]
             ip = vs_dict[VIP][0][IP_ADDRESS][ADDR]
+            if test_vip:
+                test_vip = self.test_vip.split('.')[:3]
+                ip = '.'.join(test_vip + ip.split('.')[3:])
             avi_traffic_dict[IP_ADDRESS] = ip
             avi_traffic_dict[VS_NAME] = vs_dict[NAME]
             avi_traffic_dict[CONTROLLER] = CONTROLLER_INPUT
@@ -300,6 +306,24 @@ class AviAnsibleConverter(object):
         avi_enable[ENABLE] = False
         avi_enable[WHEN] = RESULT
         name = "Disable Avi virtualservice: %s" % avi_enable[NAME]
+        ansible_dict[TASKS].append(
+            {
+                NAME: name,
+                AVI_VIRTUALSERVICE: avi_enable,
+                TAGS: [DISABLE_AVI, avi_enable[NAME], VIRTUALSERVICE]
+            })
+
+    def update_avi_ansible_vip(self, vs_dict, ansible_dict):
+        """
+        This function is used to disable the avi virtual service for test vips.
+        :param vs_dict: avi virtualservice attributes.
+        :param ansible_dict: used for playbook generation.
+        :return: None
+        """
+        avi_enable = deepcopy(vs_dict)
+        avi_enable[ENABLE] = False
+        avi_enable[WHEN] = RESULT_SUCCESS
+        name = "Update Avi virtualservice vip: %s" % avi_enable[NAME]
         ansible_dict[TASKS].append(
             {
                 NAME: name,
@@ -358,7 +382,7 @@ class AviAnsibleConverter(object):
         :return: None
         """
         for vs in self.avi_cfg['VirtualService']:
-            if self.get_status_vs(vs[NAME], f5server, f5username, f5password):
+            if True: # self.get_status_vs(vs[NAME], f5server, f5username, f5password):
                 tenant = 'admin'
                 vs_dict = dict()
                 vs_dict[NAME] = vs[NAME]
@@ -383,8 +407,10 @@ class AviAnsibleConverter(object):
                     self.generate_avi_vs_traffic(
                                                  vs_dict, ansible_dict,
                                                  vs[APPLICATION_PROFILE_REF],
-                                                 tenant=tenant
+                                                 tenant=tenant, test_vip=self.test_vip
                                                 )
+                if self.test_vip:
+                    self.update_avi_ansible_vip(vs_dict, ansible_dict)
                 self.create_avi_ansible_disable(vs_dict, ansible_dict)
                 self.create_f5_ansible_enable(f5_dict, ansible_dict)
 
@@ -409,16 +435,6 @@ class AviAnsibleConverter(object):
         generate_traffic_dict = deepcopy(ansible_dict)
         meta = self.avi_cfg['META']
 
-        # # Updating the test vips
-        # for avi_obj in self.avi_cfg:
-        #     if self.api_version == '17.1.1':
-        #         if avi_obj == 'VirtualService':
-        #             for obj in self.avi_cfg[avi_obj]:
-        #                 for ip in obj['vip']:
-        #                     print ip['ip_address']['addr']
-        #     if avi_obj == 'VsVip':
-        #         pass
-
         if 'order' not in meta:
             meta['order'] = self.default_meta_order
         for obj_type in meta['order']:
@@ -430,7 +446,7 @@ class AviAnsibleConverter(object):
                                        inuse_list)
         # if f5 username, password and server present then only generate
         #  playbook for traffic.
-        if f5server and f5user and f5password:
+        if True: # f5server and f5user and f5password:
             self.generate_traffic(generate_traffic_dict, f5server, f5user,
                                   f5password)
             # Generate traffic file separately

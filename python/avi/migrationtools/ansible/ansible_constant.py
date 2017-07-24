@@ -142,6 +142,7 @@ WHEN = 'when'
 REGISTER = 'register'
 VALUE = 'result'
 RESULT = "result.success!=0"
+RESULT_SUCCESS = "result.success==0"
 VS_NAME = 'virtualservice_name'
 TENANT = 'tenant'
 ANSIBLE_STR = '# Auto-generated from Avi Configuration\n'
