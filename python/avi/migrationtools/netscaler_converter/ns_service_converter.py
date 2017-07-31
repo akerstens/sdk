@@ -683,7 +683,7 @@ class ServiceConverter(object):
         attrs = ns_service.get('attrs')
         server = ns_servers.get(attrs[1])
         if not server:
-            return []
+            return [], False
         ns_add_server_command = 'add server'
         status = ns_util.get_conv_status(
             server, self.nsservice_server_skip, [], [],
@@ -715,7 +715,7 @@ class ServiceConverter(object):
                 ns_add_server_complete_command, STATUS_INCOMPLETE_CONFIGURATION)
             LOG.warning('Not found IP of server : %s' %
                         ns_add_server_complete_command)
-            return []
+            return [], use_service_port
         server_obj = {
             'ip': {
                 'addr': ip_addr,
