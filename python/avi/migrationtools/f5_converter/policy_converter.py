@@ -5,6 +5,8 @@ LOG = logging.getLogger(__name__)
 
 parameters_dict = {'starts-with': 'BEGINS_WITH', 'equals': 'EQUALS',
                    'contains': 'CONTAINS', 'ends-with': 'ENDS_WITH'}
+
+
 class PolicyConfigConv(object):
     def __init__(self):
         pass
@@ -12,6 +14,7 @@ class PolicyConfigConv(object):
     def convert(self, f5_config, avi_config, tenant):
         # Get the policy config from converted parsing
         policy_config = f5_config.get("policy", {})
+        print policy_config
         for each_policy in policy_config:
             httppolicy = dict()
             httppolicy['name'] = each_policy
@@ -22,7 +25,6 @@ class PolicyConfigConv(object):
 
     def create_rules(self, config, httppolicy):
         """
-
         :param config:
         :param httppolicy:
         :return:
@@ -41,7 +43,6 @@ class PolicyConfigConv(object):
 
     def create_match_rule(self, match_dict, httppolicy, global_dict):
         """
-
         :param match_dict:
         :return:
         """
@@ -52,15 +53,15 @@ class PolicyConfigConv(object):
                 match_criteria = [key for key in result if key in parameters_dict.keys()]
                 if match_criteria:
                     match_criteria = parameters_dict[str(match_criteria[0])]
-                match_policy = {
-                                'match': {
-                                            'path':
-                                                {
-                                                    'match_case': 'INSENSITIVE',
-                                                    'match_criteria': match_criteria
-                                                }
-                                }
+                match_policy = \
+                    {
+                        'match': {
+                            'path':{
+                                 'match_case': 'INSENSITIVE',
+                                 'match_criteria': match_criteria
                             }
+                        }
+                    }
             if 'values' in match_dict[each_index].keys():
                 match_str = match_dict[each_index]['values'].keys()
                 match_policy['match']['path']['match_str'] = match_str
@@ -84,18 +85,17 @@ class PolicyConfigConv(object):
                         'path':
                             {
                                 'tokens':[
-                                            {
-                                                'str_value': location,
-                                                'type': 'URI_TOKEN_TYPE_STRING'
-                                            }
+                                    {
+                                        'str_value': location,
+                                        'type': 'URI_TOKEN_TYPE_STRING'
+                                    }
 
                                 ],
                                 'type': "URI_PARAM_TYPE_TOKENIZED"
                             },
-
-                                'protocol': "HTTP",
-                                'port': 80,
-                                'status_code': "HTTP_REDIRECT_STATUS_CODE_302"
+                        'protocol': "HTTP",
+                        'port': 80,
+                        'status_code': "HTTP_REDIRECT_STATUS_CODE_302"
                     }
                 }
                 global_dict.update(action_policy)
