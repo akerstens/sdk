@@ -126,7 +126,7 @@ class F5Util(MigrationUtil):
         }
         csv_writer_dict_list.append(row)
 
-    def add_status_row(self, f5_type, f5_sub_type, f5_id, status):
+    def add_status_row(self, f5_type, f5_sub_type, f5_id, status, avi_obj=None):
         """
         Adds as status row in conversion status csv
         :param f5_type: Object type
@@ -140,8 +140,12 @@ class F5Util(MigrationUtil):
             'F5 type': f5_type,
             'F5 SubType': f5_sub_type if f5_sub_type else ' ',
             'F5 ID': f5_id,
-            'Status': status,
+            'Status': status
         }
+        if avi_obj:
+            row.update({
+                'Avi Object': str(avi_obj)
+            })
         csv_writer_dict_list.append(row)
 
 

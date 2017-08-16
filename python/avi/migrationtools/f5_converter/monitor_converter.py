@@ -198,10 +198,11 @@ class MonitorConfigConv(object):
             try:
                 LOG.debug("Converting monitor: %s" % name)
                 if monitor_type not in self.supported_types:
-                    LOG.warn("Monitor type not supported by Avi : "+name)
+                    msg = "Monitor type not supported by Avi : "+name
+                    LOG.warn(msg)
                     conv_utils.add_status_row(
                         'monitor', monitor_type, name,
-                        conv_const.STATUS_EXTERNAL_MONITOR)
+                        conv_const.STATUS_EXTERNAL_MONITOR, msg)
                     continue
                 avi_monitor = self.convert_monitor(
                     f5_monitor, key, monitor_config, input_dir, m_user_ignore,
